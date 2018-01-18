@@ -7,7 +7,7 @@ def validate_config(config):
 
 
 def _validate_recursively(config, schema, trace=None):
-	# Initialize trace if empty
+	# Initialize trace, if empty
 	if trace is None:
 		trace = []
 

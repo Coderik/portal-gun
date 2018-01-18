@@ -11,6 +11,7 @@ def main():
 	# Parse command line arguments
 	parser = argparse.ArgumentParser(prog='Portal Gun')
 	parser.add_argument('command', help='command to execute')
+	parser.add_argument('props', help='properties for command', nargs='*')
 	parser.add_argument('-c', '--config', default='config.json', dest='config', help='configuration file')
 	args = parser.parse_args()
 
