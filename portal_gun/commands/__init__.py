@@ -1,6 +1,11 @@
 import pkgutil
 
-from portal_gun.commands.factory import create_command
+from portal_gun.commands.base_command import BaseCommand
+
+
+def create_command(cmd, args):
+	""" Convenient wrapper for factory method that creates Commands. """
+	return BaseCommand.create_command(cmd, args)
 
 # Expose factory method
 __all__ = ['create_command']

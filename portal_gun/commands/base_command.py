@@ -3,9 +3,12 @@ class BaseCommand(object):
 	def __init__(self, args):
 		self._args = args
 
+	def run(self):
+		raise NotImplementedError('Every subclass of BaseCommand should implement run() method.')
+
 	@staticmethod
 	def cmd():
-		raise NotImplementedError('Every subclass of BaseCommand should implement cmd() method.')
+		raise NotImplementedError('Every subclass of BaseCommand should implement static cmd() method.')
 
 	@staticmethod
 	def create_command(cmd, args):
