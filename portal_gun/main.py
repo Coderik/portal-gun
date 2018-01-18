@@ -1,16 +1,23 @@
 import argparse
-import logging
 import json
+import logging
 from sys import exit, stderr
 
 from portal_gun.app import App
+from portal_gun.commands import create_command
 
 
 def main():
 	# Parse command line arguments
 	parser = argparse.ArgumentParser(prog='Portal Gun')
+	parser.add_argument('command', help='command to execute')
 	parser.add_argument('-c', '--config', default='config.json', dest='config', help='configuration file')
 	args = parser.parse_args()
+
+	command = create_command(args.command, args)
+
+	if command is None:
+		exit('Unknown command "{}".'.format(args.command))
 
 	# Read config
 	try:
