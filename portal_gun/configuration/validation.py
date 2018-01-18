@@ -15,12 +15,13 @@ def validate_portal_spec(portal_spec):
 
 
 def _validate(config, schema):
-	try:
-		_validate_recursively(config, schema, [])
-	except (MissingFieldError, WrongFieldTypeError) as e:
-		return e.message
-
-	return None
+	_validate_recursively(config, schema, [])
+	# try:
+	# 	_validate_recursively(config, schema, [])
+	# except (MissingFieldError, WrongFieldTypeError) as e:
+	# 	return e.message
+	#
+	# return None
 
 
 def _validate_recursively(config, schema, trace):
