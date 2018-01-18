@@ -2,7 +2,7 @@ import json
 from os import path
 
 from portal_gun.commands.base_command import BaseCommand
-from portal_gun.schemas.generation import generate_portal_spec
+from portal_gun.configuration.generation import generate_portal_spec
 
 
 class GeneratePortalSpecCommand(BaseCommand):
