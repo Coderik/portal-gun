@@ -1,14 +1,14 @@
-class PassCheckOrDie(object):
+class PassStepOrDie(object):
 	_message_width = 40
 	_filling_character = ' '
 
 	@staticmethod
 	def set_message_width(value):
-		PassCheckOrDie._message_width = value
+		PassStepOrDie._message_width = value
 
 	@staticmethod
 	def set_filling_character(value):
-		PassCheckOrDie._filling_character = value
+		PassStepOrDie._filling_character = value
 
 	def __init__(self, check_message, failure_message, errors=None, print_error=True):
 		self._check_message = check_message
@@ -18,8 +18,8 @@ class PassCheckOrDie(object):
 
 	def __enter__(self):
 		print('\t{msg:{fill}<{width}}'.format(msg=self._check_message,
-											  fill=PassCheckOrDie._filling_character,
-											  width=PassCheckOrDie._message_width),
+											  fill=PassStepOrDie._filling_character,
+											  width=PassStepOrDie._message_width),
 			  end='')
 		return self
 
@@ -42,5 +42,5 @@ class PassCheckOrDie(object):
 			return False
 
 
-def pass_check_or_die(check_message, failure_message, errors=None, print_error=True):
-	return PassCheckOrDie(check_message, failure_message, errors, print_error)
+def pass_step_or_die(check_message, failure_message, errors=None, print_error=True):
+	return PassStepOrDie(check_message, failure_message, errors, print_error)
