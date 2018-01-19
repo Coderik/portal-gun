@@ -46,7 +46,7 @@ def _validate_recursively(config, schema, trace):
 	if schema_type == dict or schema_type == GroupField:
 		# Ensure config field has expected type
 		if config_type != dict:
-			raise WrongFieldTypeError(trace, dict)
+			raise WrongFieldTypeError(trace, config_type, dict)
 
 		# Iterate through nested fields of schema
 		for key, schema_field in schema.items():
@@ -65,7 +65,7 @@ def _validate_recursively(config, schema, trace):
 
 		# Ensure config field has expected type
 		if config_type != list:
-			raise WrongFieldTypeError(trace, list)
+			raise WrongFieldTypeError(trace, config_type, list)
 
 		schema_field = schema[0]
 
@@ -78,6 +78,6 @@ def _validate_recursively(config, schema, trace):
 			_validate_recursively(config_field, schema_field, trace)
 	elif schema_type == ValueField:
 		if config_type != schema.field_type():
-			raise WrongFieldTypeError(trace, schema.field_type())
+			raise WrongFieldTypeError(trace, config_type, schema.field_type())
 	else:
 		raise SchemaError('Unexpected field type `{}` in schema.'.format(schema_type.__name__))

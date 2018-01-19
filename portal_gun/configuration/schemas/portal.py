@@ -8,7 +8,9 @@ schema = {
 		'security_group_id': rsf(),
 		'availability_zone': rsf(),
 		'subnet_id': rsf(),
-		'ebs_optimized': obf()
+		'ebs_optimized': obf(),
+		'ssh_key_file': rsf(),
+		'remote_user': rsf()
 	}),
 	'spot_fleet': rgf({
 		'iam_fleet_role': rsf()
@@ -24,7 +26,8 @@ schema = {
 		ogf({
 			'direction': rsf(),
 			'local_path': rsf(),
-			'remote_path': rsf()
+			'remote_path': rsf(),
+			'recursive': obf()
 		})
 	]
 }

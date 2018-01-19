@@ -9,17 +9,17 @@ def vf(field_type, is_required):
 
 def sf(is_required):
 	""" Make String Field. """
-	return ValueField(field_type=str, is_required=is_required)
+	return ValueField(field_type=unicode, is_required=is_required)
 
 
 def rsf():
 	""" Make required String Field. """
-	return ValueField(field_type=str, is_required=True)
+	return ValueField(field_type=unicode, is_required=True)
 
 
 def osf():
 	""" Make optional String Field. """
-	return ValueField(field_type=str, is_required=False)
+	return ValueField(field_type=unicode, is_required=False)
 
 
 def bf(is_required):
