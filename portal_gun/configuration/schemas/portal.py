@@ -18,7 +18,6 @@ schema = {
 	'persistent_volumes': [
 		rgf({
 			'volume_id': rsf(),
-			'instance_id': rsf(),
 			'device': rsf()
 		})
 	],

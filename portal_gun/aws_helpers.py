@@ -1,4 +1,7 @@
-def single_instance_spot_fleet_request(portal_spec):
+import datetime
+
+
+def single_instance_spot_fleet_request(portal_spec, portal_name, user):
 	instance_spec = portal_spec['spot_instance']
 	fleet_spec = portal_spec['spot_fleet']
 
@@ -7,8 +10,8 @@ def single_instance_spot_fleet_request(portal_spec):
 		'IamFleetRole': fleet_spec['iam_fleet_role'],
 		'TargetCapacity': 1,
 		'SpotPrice': '0.972',
-		'ValidFrom': '2018-01-19T14:12:43Z',
-  		'ValidUntil': '2019-01-19T14:12:43Z',
+		'ValidFrom': datetime.datetime.utcnow().isoformat().rsplit('.', 1)[0] + 'Z',
+  		'ValidUntil': (datetime.datetime.utcnow() + datetime.timedelta(days=60)).isoformat().rsplit('.', 1)[0] + 'Z',
 		'TerminateInstancesWithExpiration': True,
 		'Type': 'request',
 		'LaunchSpecifications': [
@@ -23,6 +26,13 @@ def single_instance_spot_fleet_request(portal_spec):
 					'SubnetId': instance_spec['subnet_id'],
 					'Groups': [instance_spec['security_group_id']],
 					'DeviceIndex': 0
+				}],
+				'TagSpecifications': [{
+					'ResourceType': 'instance',
+					'Tags': [
+						{'Key': 'portal-name', 'Value': portal_name},
+						{'Key': 'created-by', 'Value': user},
+					]
 				}]
 			}
 		]

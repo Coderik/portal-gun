@@ -17,7 +17,7 @@ class OpenChannelCommand(BaseCommand):
 
 	def run(self):
 		print('Running `{}` command.'.format(self.cmd()))
-		print('\tPreflight checks:'.expandtabs(4))
+		print('Make preflight checks:')
 
 		config, portal_spec, portal_name = run_preflight_steps(self._args)
 
@@ -28,16 +28,15 @@ class OpenChannelCommand(BaseCommand):
 			if len(channels) == 0:
 				raise Exception()
 
-		print('\tPreflight checks are complete.\n'.expandtabs(4))
+		print('Preflight checks are complete.\n')
 
 		# Print information about the channels
-		print('\tChannels defined for portal `{}`:'.format(portal_name).expandtabs(4))
+		print('Channels defined for portal `{}`:'.format(portal_name))
 		for i in range(len(channels)):
 			channel = channels[i]
-			print('\t\tChannel #{} ({}):'.format(i, channel['direction'].upper()).expandtabs(4))
-			print('\t\t\tLocal:   {}'.format(channel['local_path']).expandtabs(4))
-			print('\t\t\tRemote:  {}'.format(channel['remote_path']).expandtabs(4))
-		# print('\t\t\tDirection:  {}'.format(channel['direction']).expandtabs(4))
+			print('\tChannel #{} ({}):'.format(i, channel['direction'].upper()).expandtabs(4))
+			print('\t\tLocal:   {}'.format(channel['local_path']).expandtabs(4))
+			print('\t\tRemote:  {}'.format(channel['remote_path']).expandtabs(4))
 		print('')
 
 		# TODO:
@@ -59,8 +58,6 @@ class OpenChannelCommand(BaseCommand):
 
 			# TODO: parse output to print only moved files
 			print('>>>{}<<<'.format(output))
-
-
 
 	@staticmethod
 	def cmd():
