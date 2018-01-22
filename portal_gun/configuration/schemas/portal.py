@@ -10,7 +10,9 @@ schema = {
 		'subnet_id': rsf(),
 		'ebs_optimized': obf(),
 		'ssh_key_file': rsf(),
-		'remote_user': rsf()
+		'remote_user': rsf(),
+		'python_virtual_env': rsf(),
+		'extra_python_packages': [osf()]
 	}),
 	'spot_fleet': rgf({
 		'iam_fleet_role': rsf()
@@ -18,7 +20,8 @@ schema = {
 	'persistent_volumes': [
 		rgf({
 			'volume_id': rsf(),
-			'device': rsf()
+			'device': rsf(),
+			'mount_point': rsf()
 		})
 	],
 	'channels': [

@@ -1,4 +1,5 @@
 from __future__ import print_function
+import sys
 
 
 class PassStepOrDie(object):
@@ -38,6 +39,10 @@ class PassStepOrDie(object):
 					  offset=PassStepOrDie._message_offset)
 			  .expandtabs(PassStepOrDie._tab_width),
 			  end='')
+
+		# Ensure stdout is flushed immediately
+		sys.stdout.flush()
+
 		return self
 
 	def __exit__(self, exc_type, exc_value, traceback):

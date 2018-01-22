@@ -4,6 +4,9 @@ import time
 import sys
 
 import boto3
+from fabric.tasks import execute
+from fabric.api import env, hide, sudo, run
+from fabric.context_managers import prefix
 
 from portal_gun.commands.base_command import BaseCommand
 from portal_gun.context_managers.pass_step_or_die import pass_step_or_die
@@ -14,6 +17,7 @@ import portal_gun.aws_helpers as aws_helpers
 class OpenPortalCommand(BaseCommand):
 	def __init__(self, args):
 		BaseCommand.__init__(self, args)
+		self._fabric_retry_limit = 5
 
 	@staticmethod
 	def cmd():
@@ -67,6 +71,7 @@ class OpenPortalCommand(BaseCommand):
 
 		# Wait for spot fleet request to be fulfilled
 		print('\tWaiting for the Spot instance to be created...'.expandtabs(4))
+		print('\t(usually it takes around a minute, but might take much longer)'.expandtabs(4))
 		begin_time = datetime.datetime.now()
 		next_time = begin_time
 		while True:
@@ -109,12 +114,6 @@ class OpenPortalCommand(BaseCommand):
 
 		instance_info = response['Reservations'][0]['Instances'][0]
 
-		print('Instance info:')
-		print('\tId:              {}'.format(instance_id).expandtabs(4))
-		print('\tPublic IP:       {}'.format(instance_info['PublicIpAddress']).expandtabs(4))
-		print('\tPublic DNS name: {}'.format(instance_info['PublicDnsName']).expandtabs(4))
-		print('')
-
 		# Make requests to attach persistent volumes
 		print('Requests attachment of persistent volumes:')
 		for volume_spec in portal_spec['persistent_volumes']:
@@ -150,14 +149,54 @@ class OpenPortalCommand(BaseCommand):
 			time.sleep(0.5)
 		print('\nPersistent volumes are attached in {} seconds.\n'.format((datetime.datetime.now() - begin_time).seconds))
 
-		# TODO: ssh part
-		# - check filesystem
-		# - create folder
-		# - mount volume
-		# - install extra packages in virtual env
-		# - print ssh command
+		# Configure ssh connection via fabric
+		env.user = portal_spec['spot_instance']['remote_user']
+		env.key_filename = [portal_spec['spot_instance']['ssh_key_file']]
+		env.hosts = instance_info['PublicDnsName']
+		env.connection_attempts = self._fabric_retry_limit
 
-		print('Done')
+		print('Prepare the instance:')
+
+		# Mount persistent volumes
+		for i in range(len(portal_spec['persistent_volumes'])):
+			with pass_step_or_die('Mount volume #{}'.format(i),
+								  'Could not mount volume',
+								  errors=[RuntimeError]):
+				volume_spec = portal_spec['persistent_volumes'][i]
+				with hide('running', 'stdout'):
+					execute(self.mount_volume, volume_spec['device'], volume_spec['mount_point'])
+
+		# Install extra python packages, if needed
+		if 'extra_python_packages' in portal_spec['spot_instance'] and \
+						len(portal_spec['spot_instance']['extra_python_packages']) > 0:
+			with pass_step_or_die('Install extra python packages',
+								  'Could not install python packages',
+								  errors=[RuntimeError]):
+				python_packages = portal_spec['spot_instance']['extra_python_packages']
+				virtual_env = portal_spec['spot_instance']['python_virtual_env']
+				with hide('running', 'stdout'):
+					execute(self.install_python_packages, python_packages, virtual_env)
+
+		print('Instance is ready.\n')
+
+		# Print summary
+		print('Portal `{}` is now opened.'.format(portal_name))
+		print('Summary:')
+		print('\tInstance:'.expandtabs(4))
+		print('\t\tId:              {}'.format(instance_id).expandtabs(4))
+		print('\t\tType:            {}'.format(instance_info['InstanceType']).expandtabs(4))
+		print('\t\tPublic IP:       {}'.format(instance_info['PublicIpAddress']).expandtabs(4))
+		print('\t\tPublic DNS name: {}'.format(instance_info['PublicDnsName']).expandtabs(4))
+		print('\tPersistent volumes:'.expandtabs(4))
+		for volume_spec in portal_spec['persistent_volumes']:
+			print('\t\t{}: {}'.format(volume_spec['device'], volume_spec['mount_point']).expandtabs(4))
+		print('')
+
+		# Print ssh command
+		print('Use the following command to connect to the remote machine:')
+		print('ssh -i "{}" {}@{}'.format(portal_spec['spot_instance']['ssh_key_file'],
+										 portal_spec['spot_instance']['remote_user'],
+										 instance_info['PublicDnsName']))
 
 	def check_instance_not_exists(self, ec2_client, portal_name, user):
 		# Make request
@@ -184,5 +223,21 @@ class OpenPortalCommand(BaseCommand):
 			exit('Error: request failed with status code {}.'.format(status_code))
 
 		if not all([volume['State'] == 'available' for volume in response['Volumes']]):
-			states = ['{} - `{}`'.format(volume['VolumeId'], volume['State']) for volume in response['Volumes']]
-			raise RuntimeError('States: {}'.format(', '.join(states)))
+			states = ['{} is {}'.format(volume['VolumeId'], volume['State']) for volume in response['Volumes']]
+			raise RuntimeError(', '.join(states))
+
+	def mount_volume(self, device, mount_point):
+		# Ensure volume contains a file system
+		out = sudo('file -s {}'.format(device))
+		if out == '{}: data':
+			raise RuntimeError('There is no file system on the device `{}`'.format(device))
+
+		# Create mount point
+		run('mkdir -p {}'.format(mount_point))
+
+		# Mount volume
+		sudo('mount {} {}'.format(device, mount_point))
+
+	def install_python_packages(self, packages, virtual_env):
+		with prefix('source activate {}'.format(virtual_env)):
+			run('pip install {}'.format(' '.join(packages)))
