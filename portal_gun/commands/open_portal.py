@@ -166,6 +166,7 @@ class OpenPortalCommand(BaseCommand):
 				with hide('running', 'stdout'):
 					execute(self.mount_volume, volume_spec['device'], volume_spec['mount_point'])
 
+		# TODO: consider importing and executing custom fab tasks instead
 		# Install extra python packages, if needed
 		if 'extra_python_packages' in portal_spec['spot_instance'] and \
 						len(portal_spec['spot_instance']['extra_python_packages']) > 0:
