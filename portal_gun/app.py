@@ -1,6 +1,7 @@
 import boto3
 
-from portal_gun.config_schema import ConfigValidationError, validate as validate_config
+from portal_gun.configuration.validation import validate_config
+from portal_gun.configuration.exceptions import ConfigValidationError
 
 
 class App(object):
