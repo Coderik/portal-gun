@@ -1,80 +1,31 @@
-import boto3
+def get_spot_instance(aws_client, portal_name, user):
+	spot_instance = aws_client.find_spot_instance(portal_name, user)
 
-
-def get_user_identity(aws_access_key, aws_secret_key):
-	# Create STS client
-	sts_client = boto3.client('sts',
-							  aws_access_key_id=aws_access_key,
-							  aws_secret_access_key=aws_secret_key)
-
-	response = sts_client.get_caller_identity()
-
-	# Check status code
-	status_code = response['ResponseMetadata']['HTTPStatusCode']
-	if status_code != 200:
-		exit('Error: request failed with status code {}.'.format(status_code))
-
-	return response
-
-
-def get_spot_instance(ec2_client, portal_name, user):
-	# Make request
-	filters = [{'Name': 'tag:portal-name', 'Values': [portal_name]},
-			   {'Name': 'tag:created-by', 'Values': [user]},
-			   {'Name': 'instance-state-name', 'Values': ['running', 'pending']}]
-	response = ec2_client.describe_instances(Filters=filters)
-
-	# Check status code
-	status_code = response['ResponseMetadata']['HTTPStatusCode']
-	if status_code != 200:
-		exit('Error: request failed with status code {}.'.format(status_code))
-
-	if len(response['Reservations']) == 0:
+	if spot_instance is None:
 		raise RuntimeError('Instance is not running')
 
-	return response['Reservations'][0]['Instances'][0]
+	return spot_instance
 
 
-def get_spot_fleet_request(ec2_client, spot_fleet_request_id):
-	# Make request
-	response = ec2_client.describe_spot_fleet_requests(SpotFleetRequestIds=[spot_fleet_request_id])
+def get_spot_fleet_request(aws_client, spot_fleet_request_id):
+	spot_fleet_request = aws_client.get_spot_fleet_request(spot_fleet_request_id)
 
-	# Check status code
-	status_code = response['ResponseMetadata']['HTTPStatusCode']
-	if status_code != 200:
-		exit('Error: request failed with status code {}.'.format(status_code))
-
-	if len(response['SpotFleetRequestConfigs']) == 0:
+	if spot_fleet_request is None:
 		raise RuntimeError('Could not find spot instance request')
 
-	return response['SpotFleetRequestConfigs'][0]
+	return spot_fleet_request
 
 
-def check_instance_not_exists(ec2_client, portal_name, user):
-	# Make request
-	filters = [{'Name': 'tag:portal-name', 'Values': [portal_name]},
-			   {'Name': 'tag:opened-by', 'Values': [user]},
-			   {'Name': 'instance-state-name', 'Values': ['running', 'pending']}]
-	response = ec2_client.describe_instances(Filters=filters)
+def check_instance_not_exists(aws_client, portal_name, user):
+	spot_instance = aws_client.find_spot_instance(portal_name, user)
 
-	# Check status code
-	status_code = response['ResponseMetadata']['HTTPStatusCode']
-	if status_code != 200:
-		exit('Error: request failed with status code {}.'.format(status_code))
-
-	if len(response['Reservations']) != 0:
+	if spot_instance is not None:
 		raise RuntimeError('Instance is already running')
 
 
-def check_volumes_availability(ec2_client, volume_ids):
-	# Make request
-	response = ec2_client.describe_volumes(VolumeIds=volume_ids)
+def check_volumes_availability(aws_client, volume_ids):
+	volumes = aws_client.get_volumes(volume_ids)
 
-	# Check status code
-	status_code = response['ResponseMetadata']['HTTPStatusCode']
-	if status_code != 200:
-		exit('Error: request failed with status code {}.'.format(status_code))
-
-	if not all([volume['State'] == 'available' for volume in response['Volumes']]):
-		states = ['{} is {}'.format(volume['VolumeId'], volume['State']) for volume in response['Volumes']]
+	if not all([volume['State'] == 'available' for volume in volumes]):
+		states = ['{} is {}'.format(volume['VolumeId'], volume['State']) for volume in volumes]
 		raise RuntimeError(', '.join(states))
