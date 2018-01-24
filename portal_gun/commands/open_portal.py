@@ -12,6 +12,7 @@ from portal_gun.commands.base_command import BaseCommand
 from portal_gun.context_managers.pass_step_or_die import pass_step_or_die
 from portal_gun.commands.helpers import run_preflight_steps
 import portal_gun.aws_helpers as aws_helpers
+from portal_gun.commands import common
 
 
 class OpenPortalCommand(BaseCommand):
@@ -38,28 +39,31 @@ class OpenPortalCommand(BaseCommand):
 								  aws_access_key_id=config['aws_access_key'],
 								  aws_secret_access_key=config['aws_secret_key'])
 
-		# TODO: get current user name
-
 		print('Check requested resources:')
+
+		# Get current user
+		with pass_step_or_die('Get user identity',
+							  'Could not get current user identity'.format(portal_name)):
+			user = common.get_user_identity(config['aws_access_key'], config['aws_secret_key'])
 
 		# Ensure that instance does not yet exist
 		with pass_step_or_die('Check already running instances',
 							  'Portal `{}` seems to be already opened'.format(portal_name),
 							  errors=[RuntimeError]):
-			self.check_instance_not_exists(ec2_client, portal_name, 'user')
+			common.check_instance_not_exists(ec2_client, portal_name, user['Arn'])
 
 		# Ensure persistent volumes are available
 		with pass_step_or_die('Check volumes availability',
 							  'Not all volumes are available',
 							  errors=[RuntimeError]):
 			volume_ids = [volume_spec['volume_id'] for volume_spec in portal_spec['persistent_volumes']]
-			self.check_volumes_availability(ec2_client, volume_ids)
+			common.check_volumes_availability(ec2_client, volume_ids)
 
 		print('Required resources are available.\n')
 
 		# Make request for Spot instance
 		print('Request a Spot instance:')
-		request_config = aws_helpers.single_instance_spot_fleet_request(portal_spec, portal_name, 'user')
+		request_config = aws_helpers.single_instance_spot_fleet_request(portal_spec, portal_name, user['Arn'])
 		response = ec2_client.request_spot_fleet(SpotFleetRequestConfig=request_config)
 
 		# Check status code
@@ -198,34 +202,6 @@ class OpenPortalCommand(BaseCommand):
 		print('ssh -i "{}" {}@{}'.format(portal_spec['spot_instance']['ssh_key_file'],
 										 portal_spec['spot_instance']['remote_user'],
 										 instance_info['PublicDnsName']))
-
-	def check_instance_not_exists(self, ec2_client, portal_name, user):
-		# Make request
-		filters = [{'Name': 'tag:portal-name', 'Values': [portal_name]},
-				   {'Name': 'tag:created-by', 'Values': [user]},
-				   {'Name': 'instance-state-name', 'Values': ['running', 'pending']}]
-		response = ec2_client.describe_instances(Filters=filters)
-
-		# Check status code
-		status_code = response['ResponseMetadata']['HTTPStatusCode']
-		if status_code != 200:
-			exit('Error: request failed with status code {}.'.format(status_code))
-
-		if len(response['Reservations']) != 0:
-			raise RuntimeError('Instance is already running')
-
-	def check_volumes_availability(self, ec2_client, volume_ids):
-		# Make request
-		response = ec2_client.describe_volumes(VolumeIds=volume_ids)
-
-		# Check status code
-		status_code = response['ResponseMetadata']['HTTPStatusCode']
-		if status_code != 200:
-			exit('Error: request failed with status code {}.'.format(status_code))
-
-		if not all([volume['State'] == 'available' for volume in response['Volumes']]):
-			states = ['{} is {}'.format(volume['VolumeId'], volume['State']) for volume in response['Volumes']]
-			raise RuntimeError(', '.join(states))
 
 	def mount_volume(self, device, mount_point):
 		# Ensure volume contains a file system
