@@ -51,6 +51,16 @@ class AwsClient(object):
 
 		return response['Reservations'][0]['Instances'][0]
 
+	def get_spot_fleet_instances(self, spot_fleet_request_id):
+		response = self.ec2_client().describe_spot_fleet_instances(SpotFleetRequestId=spot_fleet_request_id)
+
+		# Check status code
+		status_code = response['ResponseMetadata']['HTTPStatusCode']
+		if status_code != 200:
+			exit('Error: request failed with status code {}'.format(status_code))
+
+		return response['ActiveInstances']
+
 	def get_spot_fleet_request(self, spot_fleet_request_id):
 		# Make request
 		response = self.ec2_client().describe_spot_fleet_requests(SpotFleetRequestIds=[spot_fleet_request_id])

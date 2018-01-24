@@ -16,10 +16,10 @@ class ShowPortalStatusCommand(BaseCommand):
 
 	def run(self):
 		print('Running `{}` command.\n'.format(self.cmd()))
+
+		# Find, parse and validate configs
 		print('Make preflight checks:')
-
 		config, portal_spec, portal_name = run_preflight_steps(self._args)
-
 		print('Preflight checks are complete.\n')
 
 		# Create AWS client

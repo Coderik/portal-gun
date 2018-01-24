@@ -24,8 +24,9 @@ class OpenChannelCommand(BaseCommand):
 
 	def run(self):
 		print('Running `{}` command.'.format(self.cmd()))
-		print('Make preflight checks:')
 
+		# Find, parse and validate configs
+		print('Make preflight checks:')
 		config, portal_spec, portal_name = run_preflight_steps(self._args)
 
 		# Ensure there is at least one channel spec

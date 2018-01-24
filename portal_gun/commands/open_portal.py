@@ -28,10 +28,10 @@ class OpenPortalCommand(BaseCommand):
 	# TODO: add verbose mode that prints all configs and dry-run mode to check the configs and permissions
 	def run(self):
 		print('Running `{}` command.\n'.format(self.cmd()))
+
+		# Find, parse and validate configs
 		print('Make preflight checks:')
-
 		config, portal_spec, portal_name = run_preflight_steps(self._args)
-
 		print('Preflight checks are complete.\n')
 
 		# Create AWS client
@@ -73,16 +73,16 @@ class OpenPortalCommand(BaseCommand):
 		while True:
 			# Repeat status request every N seconds
 			if datetime.datetime.now() > next_time:
-				response = aws.ec2_client().describe_spot_fleet_requests(SpotFleetRequestIds=[spot_fleet_request_id])
+				spot_fleet_request = aws.get_spot_fleet_request(spot_fleet_request_id)
 				next_time += datetime.timedelta(seconds=5)
 
 			# Compute time spend in waiting
 			elapsed = datetime.datetime.now() - begin_time
 
 			# Check request state and activity status
-			request_state = response['SpotFleetRequestConfigs'][0]['SpotFleetRequestState']
+			request_state = spot_fleet_request['SpotFleetRequestState']
 			if request_state == 'active':
-				spot_request_status = response['SpotFleetRequestConfigs'][0]['ActivityStatus']
+				spot_request_status = spot_fleet_request['ActivityStatus']
 				if spot_request_status == 'fulfilled':
 					break
 				else:
@@ -96,11 +96,11 @@ class OpenPortalCommand(BaseCommand):
 			time.sleep(0.5)
 		print('\nSpot instance is created in {} seconds.\n'.format((datetime.datetime.now() - begin_time).seconds))
 
-		response = aws.ec2_client().describe_spot_fleet_instances(SpotFleetRequestId=spot_fleet_request_id)
+		# Get id of the created instance
+		spot_fleet_instances = aws.get_spot_fleet_instances(spot_fleet_request_id)
+		instance_id = spot_fleet_instances[0]['InstanceId']
 
-		instance_id = response['ActiveInstances'][0]['InstanceId']
-
-		# Get information about the instance
+		# Get information about the created instance
 		instance_info = aws.get_instance(instance_id)
 
 		# Make requests to attach persistent volumes
