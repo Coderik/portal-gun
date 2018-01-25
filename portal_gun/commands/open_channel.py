@@ -1,3 +1,4 @@
+import boto3
 from fabric.tasks import execute
 from fabric.api import env, hide
 from fabric.contrib.project import rsync_project
@@ -5,6 +6,8 @@ from fabric.contrib.project import rsync_project
 from portal_gun.commands.base_command import BaseCommand
 from portal_gun.commands.helpers import run_preflight_steps
 from portal_gun.context_managers.pass_step_or_die import pass_step_or_die
+from portal_gun.commands.aws_client import AwsClient
+from portal_gun.commands import common
 
 
 def sync_files(local_path, remote_path, is_upload, is_recursive):
@@ -15,10 +18,15 @@ class OpenChannelCommand(BaseCommand):
 	def __init__(self, args):
 		BaseCommand.__init__(self, args)
 
+	@staticmethod
+	def cmd():
+		return 'channel'
+
 	def run(self):
 		print('Running `{}` command.'.format(self.cmd()))
-		print('Make preflight checks:')
 
+		# Find, parse and validate configs
+		print('Make preflight checks:')
 		config, portal_spec, portal_name = run_preflight_steps(self._args)
 
 		# Ensure there is at least one channel spec
@@ -30,6 +38,26 @@ class OpenChannelCommand(BaseCommand):
 
 		print('Preflight checks are complete.\n')
 
+		# Create AWS client
+		aws = AwsClient(config['aws_access_key'], config['aws_secret_key'], config['aws_region'])
+
+		print('Retrieve associated resources:')
+
+		# Get current user
+		with pass_step_or_die('User identity',
+							  'Could not get current user identity'.format(portal_name)):
+			user = aws.get_user_identity()
+
+		# Get spot instance
+		with pass_step_or_die('Spot instance',
+							  'Portal `{}` does not seem to be opened'.format(portal_name),
+							  errors=[RuntimeError]):
+			spot_instance = common.get_spot_instance(aws, portal_name, user['Arn'])
+
+		print('Done.\n')
+
+		host_name = spot_instance['PublicDnsName']
+
 		# Print information about the channels
 		print('Channels defined for portal `{}`:'.format(portal_name))
 		for i in range(len(channels)):
@@ -38,11 +66,6 @@ class OpenChannelCommand(BaseCommand):
 			print('\t\tLocal:   {}'.format(channel['local_path']).expandtabs(4))
 			print('\t\tRemote:  {}'.format(channel['remote_path']).expandtabs(4))
 		print('')
-
-		# TODO:
-		# - find instance by tag and ensure it is running
-		# - get its host name
-		host_name = "ec2-34-242-109-27.eu-west-1.compute.amazonaws.com"
 
 		# Specify remote host for ssh
 		env.user = portal_spec['spot_instance']['remote_user']
@@ -58,7 +81,3 @@ class OpenChannelCommand(BaseCommand):
 
 			# TODO: parse output to print only moved files
 			print('>>>{}<<<'.format(output))
-
-	@staticmethod
-	def cmd():
-		return 'channel'

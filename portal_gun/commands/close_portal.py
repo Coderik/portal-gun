@@ -5,6 +5,8 @@ import boto3
 from portal_gun.commands.base_command import BaseCommand
 from portal_gun.context_managers.pass_step_or_die import pass_step_or_die
 from portal_gun.commands.helpers import run_preflight_steps
+from portal_gun.commands.aws_client import AwsClient
+from portal_gun.commands import common
 
 
 class ClosePortalCommand(BaseCommand):
@@ -17,27 +19,27 @@ class ClosePortalCommand(BaseCommand):
 
 	def run(self):
 		print('Running `{}` command.\n'.format(self.cmd()))
+
+		# Find, parse and validate configs
 		print('Make preflight checks:')
-
 		config, portal_spec, portal_name = run_preflight_steps(self._args)
-
 		print('Preflight checks are complete.\n')
 
-		# Create EC2 client
-		ec2_client = boto3.client('ec2',
-								  config['aws_region'],
-								  aws_access_key_id=config['aws_access_key'],
-								  aws_secret_access_key=config['aws_secret_key'])
-
-		# TODO: get current user name
+		# Create AWS client
+		aws = AwsClient(config['aws_access_key'], config['aws_secret_key'], config['aws_region'])
 
 		print('Retrieve associated resources:')
+
+		# Get current user
+		with pass_step_or_die('Get user identity',
+							  'Could not get current user identity'.format(portal_name)):
+			user = aws.get_user_identity()
 
 		# Get spot instance
 		with pass_step_or_die('Spot instance',
 							  'Portal `{}` does not seem to be opened'.format(portal_name),
 							  errors=[RuntimeError]):
-			spot_instance = self.get_spot_instance(ec2_client, portal_name, 'user')
+			spot_instance = common.get_spot_instance(aws, portal_name, user['Arn'])
 
 		spot_fleet_request_id = \
 			filter(lambda tag: tag['Key'] == 'aws:ec2spot:fleet-request-id', spot_instance['Tags'])[0]['Value']
@@ -46,52 +48,13 @@ class ClosePortalCommand(BaseCommand):
 		with pass_step_or_die('Spot instance request',
 							  'Portal `{}` does not seem to be opened'.format(portal_name),
 							  errors=[RuntimeError]):
-			spot_fleet_request = self.get_spot_fleet_request(ec2_client, spot_fleet_request_id)
+			spot_fleet_request = common.get_spot_fleet_request(aws, spot_fleet_request_id)
 
 		print('Done.\n')
 
 		# TODO: print fleet and instance statistics
 
 		# Cancel spot instance request
-		response = ec2_client.cancel_spot_fleet_requests(SpotFleetRequestIds=[spot_fleet_request_id],
-														 TerminateInstances=True)
-
-		# Check status code
-		status_code = response['ResponseMetadata']['HTTPStatusCode']
-		if status_code != 200:
-			exit('Error: request failed with status code {}'.format(status_code))
-
-		# TODO: check the response to make sure request was canceled
+		aws.cancel_spot_fleet_request(spot_fleet_request_id)
 
 		print('Portal `{}` has been closed.'.format(portal_name))
-
-	def get_spot_instance(self, ec2_client, portal_name, user):
-		# Make request
-		filters = [{'Name': 'tag:portal-name', 'Values': [portal_name]},
-				   {'Name': 'tag:created-by', 'Values': [user]},
-				   {'Name': 'instance-state-name', 'Values': ['running', 'pending']}]
-		response = ec2_client.describe_instances(Filters=filters)
-
-		# Check status code
-		status_code = response['ResponseMetadata']['HTTPStatusCode']
-		if status_code != 200:
-			exit('Error: request failed with status code {}.'.format(status_code))
-
-		if len(response['Reservations']) == 0:
-			raise RuntimeError('Instance is not running')
-
-		return response['Reservations'][0]['Instances'][0]
-
-	def get_spot_fleet_request(self, ec2_client, spot_fleet_request_id):
-		# Make request
-		response = ec2_client.describe_spot_fleet_requests(SpotFleetRequestIds=[spot_fleet_request_id])
-
-		# Check status code
-		status_code = response['ResponseMetadata']['HTTPStatusCode']
-		if status_code != 200:
-			exit('Error: request failed with status code {}.'.format(status_code))
-
-		if len(response['SpotFleetRequestConfigs']) == 0:
-			raise RuntimeError('Could not find spot instance request')
-
-		return response['SpotFleetRequestConfigs'][0]
