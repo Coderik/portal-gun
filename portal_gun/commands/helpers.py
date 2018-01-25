@@ -16,10 +16,9 @@ def run_preflight_steps(args):
 	with pass_step_or_die('Validate config', 'Config is not valid', errors=[ConfigValidationError]):
 		validate_config(config)
 
-	# Get portal name and portal spec filename
-	with pass_step_or_die('Check portal name', 'No portal name was provided'):
-		portal_name = args.props[0]
-		spec_filename = '{}.json'.format(portal_name)
+	# Get portal name and spec file
+	portal_name = args.portal.rsplit('.', 1)[0]
+	spec_filename = '{}.json'.format(portal_name)
 
 	# Ensure spec file exists
 	with pass_step_or_die('Locate portal specification file',

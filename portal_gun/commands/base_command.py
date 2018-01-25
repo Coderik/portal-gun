@@ -10,6 +10,17 @@ class BaseCommand(object):
 	def cmd():
 		raise NotImplementedError('Every subclass of BaseCommand should implement static cmd() method.')
 
+	@classmethod
+	def add_subparser(cls, subparsers):
+		raise NotImplementedError('Every subclass of BaseCommand should implement static cmd() method.')
+
+	@staticmethod
+	def fill_subparsers(subparsers):
+		""" Add subparser for every instance of Command. """
+
+		for cls in BaseCommand.__subclasses__():
+			cls.add_subparser(subparsers)
+
 	@staticmethod
 	def create_command(cmd, args):
 		""" Factory method that creates instances of Commands. """
