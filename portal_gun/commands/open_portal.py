@@ -70,30 +70,39 @@ class OpenPortalCommand(BaseCommand):
 		print('\t(usually it takes around a minute, but might take much longer)'.expandtabs(4))
 		begin_time = datetime.datetime.now()
 		next_time = begin_time
-		while True:
-			# Repeat status request every N seconds
-			if datetime.datetime.now() > next_time:
-				spot_fleet_request = aws.get_spot_fleet_request(spot_fleet_request_id)
-				next_time += datetime.timedelta(seconds=5)
+		try:
+			while True:
+				# Repeat status request every N seconds
+				if datetime.datetime.now() > next_time:
+					spot_fleet_request = aws.get_spot_fleet_request(spot_fleet_request_id)
+					next_time += datetime.timedelta(seconds=5)
 
-			# Compute time spend in waiting
-			elapsed = datetime.datetime.now() - begin_time
+				# Compute time spend in waiting
+				elapsed = datetime.datetime.now() - begin_time
 
-			# Check request state and activity status
-			request_state = spot_fleet_request['SpotFleetRequestState']
-			if request_state == 'active':
-				spot_request_status = spot_fleet_request['ActivityStatus']
-				if spot_request_status == 'fulfilled':
-					break
+				# Check request state and activity status
+				request_state = spot_fleet_request['SpotFleetRequestState']
+				if request_state == 'active':
+					spot_request_status = spot_fleet_request['ActivityStatus']
+					if spot_request_status == 'fulfilled':
+						break
+					else:
+						print('\r\tElapsed {}s. Spot request is {} and has status `{}`'
+							  .format(elapsed.seconds, request_state, spot_request_status).expandtabs(4), end='\r')
 				else:
-					print('\r\tElapsed {}s. Spot request is {} and has status `{}`'
-						  .format(elapsed.seconds, request_state, spot_request_status).expandtabs(4), end='\r')
-			else:
-				print('\r\tElapsed {}s. Spot request is {}'.format(elapsed.seconds, request_state).expandtabs(4),
-					  end='\r')
+					print('\r\tElapsed {}s. Spot request is {}'.format(elapsed.seconds, request_state).expandtabs(4),
+						  end='\r')
 
-			sys.stdout.flush()  # ensure stdout is flushed immediately.
-			time.sleep(0.5)
+				sys.stdout.flush()  # ensure stdout is flushed immediately.
+				time.sleep(0.5)
+		except KeyboardInterrupt:
+			print('\nInterrupting...')
+
+			# Cancel spot instance request
+			aws.cancel_spot_fleet_request(spot_fleet_request_id)
+
+			print('Spot request has been cancelled.')
+			exit()
 		print('\nSpot instance is created in {} seconds.\n'.format((datetime.datetime.now() - begin_time).seconds))
 
 		# Get id of the created instance
