@@ -9,7 +9,6 @@ def single_instance_spot_fleet_request(portal_spec, portal_name, user):
 		'AllocationStrategy': 'lowestPrice',
 		'IamFleetRole': fleet_spec['iam_fleet_role'],
 		'TargetCapacity': 1,
-		'SpotPrice': '0.972',
 		'ValidFrom': datetime.datetime.utcnow().isoformat().rsplit('.', 1)[0] + 'Z',
   		'ValidUntil': (datetime.datetime.utcnow() + datetime.timedelta(days=60)).isoformat().rsplit('.', 1)[0] + 'Z',
 		'TerminateInstancesWithExpiration': True,
