@@ -53,5 +53,12 @@ class ShowPortalStatusCommand(BaseCommand):
 			print('\tPersistent volumes:'.expandtabs(4))
 			for volume_spec in portal_spec['persistent_volumes']:
 				print('\t\t{}: {}'.format(volume_spec['device'], volume_spec['mount_point']).expandtabs(4))
+
+			# Print ssh command
+			print('')
+			print('Use the following command to connect to the remote machine:')
+			print('ssh -i "{}" {}@{}'.format(portal_spec['spot_instance']['ssh_key_file'],
+											 portal_spec['spot_instance']['remote_user'],
+											 instance_info['PublicDnsName']))
 		else:
 			print('Portal `{}` is not opened.'.format(portal_name).expandtabs(4))

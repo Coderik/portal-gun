@@ -1,3 +1,7 @@
+import threading
+import datetime
+import signal
+
 import boto3
 from fabric.tasks import execute
 from fabric.api import env, hide
@@ -11,7 +15,27 @@ from portal_gun.commands import common
 
 
 def sync_files(local_path, remote_path, is_upload, is_recursive):
-	return rsync_project(remote_path, local_path, delete=True, upload=is_upload, capture=True)
+	extra_opts = '--out-format="[%t] {} %f %\'\'b"'.format('OUT' if is_upload else 'IN')
+	if is_recursive:
+		extra_opts += ' -r'
+
+	with hide('running', 'stdout'):
+		output = execute(rsync_project, remote_path, local_path, delete=True, upload=is_upload, capture=True,
+						 extra_opts=extra_opts)
+
+	# Get raw stdout output
+	output = output.values()[0]
+
+	# Get transferred files
+	transferred_files = output.split('\n')[1:-3]
+
+	if len(transferred_files) > 0:
+		print('\n'.join(transferred_files))
+
+
+def run_periodically(callable, callable_args, delay):
+	callable(*callable_args)
+	threading.Timer(delay, run_periodically, args=[callable, callable_args, delay]).start()
 
 
 class OpenChannelCommand(BaseCommand):
@@ -72,12 +96,9 @@ class OpenChannelCommand(BaseCommand):
 		env.key_filename = [portal_spec['spot_instance']['ssh_key_file']]
 		env.hosts = [host_name]
 
-		# TODO: run periodically
+		# Periodically sync files across all channels
+		print('Syncing... (press ctrl+C to interrupt)')
 		for channel in channels:
 			is_upload = channel['direction'] == 'out'
 			is_recursive = channel['recursive'] if 'recursive' in channel else False
-			with hide('running', 'stdout'):
-				output = execute(sync_files, channel['local_path'], channel['remote_path'], is_upload, is_recursive)
-
-			# TODO: parse output to print only moved files
-			print('>>>{}<<<'.format(output))
+			run_periodically(sync_files, [channel['local_path'], channel['remote_path'], is_upload, is_recursive], 1.0)
