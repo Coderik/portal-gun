@@ -25,6 +25,11 @@ class OpenPortalCommand(BaseCommand):
 	def cmd():
 		return 'open'
 
+	@classmethod
+	def add_subparser(cls, subparsers):
+		parser = subparsers.add_parser(cls.cmd(), help='Open portal')
+		parser.add_argument('portal', help='name of portal')
+
 	# TODO: add verbose mode that prints all configs and dry-run mode to check the configs and permissions
 	def run(self):
 		print('Running `{}` command.\n'.format(self.cmd()))

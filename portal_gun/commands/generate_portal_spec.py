@@ -10,12 +10,21 @@ class GeneratePortalSpecCommand(BaseCommand):
 		BaseCommand.__init__(self, args)
 		self._default_name = 'portal'
 
+	@staticmethod
+	def cmd():
+		return 'init'
+
+	@classmethod
+	def add_subparser(cls, subparsers):
+		parser = subparsers.add_parser(cls.cmd(), help='Generate template specification file for new portal')
+		parser.add_argument('portal', help='name of portal')
+
 	def run(self):
 		print('Running `{}` command.'.format(self.cmd()))
 
 		# Get portal name
 		if len(self._args.props) > 0:
-			portal_name = self._args.props[0]
+			portal_name = self._args.portal.rsplit('.', 1)[0]
 		else:
 			print('\tNo portal name was provided, so default name `{}` will be used.'.format(self._default_name))
 			portal_name = self._default_name
@@ -38,7 +47,3 @@ class GeneratePortalSpecCommand(BaseCommand):
 			f.write(spec_str)
 
 		print('\tDraft of portal specification has been written to `{}`.'.format(file_name))
-
-	@staticmethod
-	def cmd():
-		return 'init'

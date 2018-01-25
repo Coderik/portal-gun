@@ -12,6 +12,11 @@ class PrintSshCommand(BaseCommand):
 	def cmd():
 		return 'ssh'
 
+	@classmethod
+	def add_subparser(cls, subparsers):
+		parser = subparsers.add_parser(cls.cmd(), help='Print ssh command to connect to the remote instance')
+		parser.add_argument('portal', help='name of portal')
+
 	def run(self):
 		# Find, parse and validate configs
 		with NoPrint():
