@@ -29,7 +29,8 @@ schema = {
 			'direction': rsf(),
 			'local_path': rsf(),
 			'remote_path': rsf(),
-			'recursive': obf()
+			'recursive': obf(),
+			'delay': vf(float, False)
 		})
 	]
 }

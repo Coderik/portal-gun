@@ -101,4 +101,7 @@ class OpenChannelCommand(BaseCommand):
 		for channel in channels:
 			is_upload = channel['direction'] == 'out'
 			is_recursive = channel['recursive'] if 'recursive' in channel else False
-			run_periodically(sync_files, [channel['local_path'], channel['remote_path'], is_upload, is_recursive], 1.0)
+			delay = 1.0
+			if 'delay' in channel:
+				delay = channel['delay']
+			run_periodically(sync_files, [channel['local_path'], channel['remote_path'], is_upload, is_recursive], delay)
