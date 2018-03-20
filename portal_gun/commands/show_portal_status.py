@@ -62,8 +62,8 @@ class ShowPortalStatusCommand(BaseCommand):
 			# Print ssh command
 			print('')
 			print('Use the following command to connect to the remote machine:')
-			print('ssh -i "{}" {}@{}'.format(portal_spec['spot_instance']['ssh_key_file'],
+			print('\tssh -i "{}" {}@{}'.format(portal_spec['spot_instance']['ssh_key_file'],
 											 portal_spec['spot_instance']['remote_user'],
-											 instance_info['PublicDnsName']))
+											 instance_info['PublicDnsName']).expandtabs(4))
 		else:
 			print('Portal `{}` is not opened.'.format(portal_name).expandtabs(4))
