@@ -12,7 +12,7 @@ def main():
 	# Add sub argparsers for commands
 	fill_subparsers(subparsers)
 
-	parser.add_argument('-c', '--config', default='config.json', dest='config', help='configuration file')
+	parser.add_argument('-c', '--config', default='config.json', dest='config', help='Configuration file')
 	args = parser.parse_args()
 
 	command = create_command(args.command, args)
