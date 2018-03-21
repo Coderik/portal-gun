@@ -20,7 +20,7 @@ class ClosePortalCommand(BaseCommand):
 	@classmethod
 	def add_subparser(cls, subparsers):
 		parser = subparsers.add_parser(cls.cmd(), help='Close portal')
-		parser.add_argument('portal', help='name of portal')
+		parser.add_argument('portal', help='Name of portal')
 
 	def run(self):
 		print('Running `{}` command.\n'.format(self.cmd()))

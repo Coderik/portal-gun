@@ -17,7 +17,7 @@ class GeneratePortalSpecCommand(BaseCommand):
 	@classmethod
 	def add_subparser(cls, subparsers):
 		parser = subparsers.add_parser(cls.cmd(), help='Generate template specification file for new portal')
-		parser.add_argument('portal', help='name of portal')
+		parser.add_argument('portal', help='Name of portal')
 
 	def run(self):
 		print('Running `{}` command.'.format(self.cmd()))

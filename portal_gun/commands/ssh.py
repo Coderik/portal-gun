@@ -6,7 +6,9 @@ from portal_gun.context_managers.no_print import NoPrint
 import os
 
 
-class PrintSshCommand(BaseCommand):
+class SshCommand(BaseCommand):
+	DEFAULT_TMUX_SESSION = 'portal'
+
 	def __init__(self, args):
 		BaseCommand.__init__(self, args)
 
@@ -17,8 +19,10 @@ class PrintSshCommand(BaseCommand):
 	@classmethod
 	def add_subparser(cls, subparsers):
 		parser = subparsers.add_parser(cls.cmd(), help='Connect to the remote host via ssh')
-		parser.add_argument('portal', help='name of portal')
-		parser.add_argument('-t', '--tmux', dest='tmux', nargs='?', default=None, const='portal')
+		parser.add_argument('portal', help='Name of portal')
+		parser.add_argument('-t', '--tmux', dest='tmux', nargs='?', default=None, const=cls.DEFAULT_TMUX_SESSION,
+							metavar='session', help='Automatically open tmux session upon connection. '
+													'Default session name is "{}".'.format(cls.DEFAULT_TMUX_SESSION))
 
 	def run(self):
 		# Find, parse and validate configs
