@@ -26,12 +26,18 @@ class ShowPortalInfoCommand(BaseCommand):
 
 	def run(self):
 		if self._args.field is not None:
-			if self._args.field in self.FIELDS:
-				print(self.get_field(self._args.field))
+			# Get value of the specified field and print it
+			value = self.get_field(self._args.field)
+			if value is not None:
+				print value
 		else:
 			self.show_full_info()
 
 	def get_field(self, field):
+		# Ensure field name is valid
+		if field not in self.FIELDS:
+			return None
+
 		with NoPrint():
 			# Find, parse and validate configs
 			config, portal_spec, portal_name = run_preflight_steps(self._args)
@@ -54,6 +60,11 @@ class ShowPortalInfoCommand(BaseCommand):
 
 			if field == 'status':
 				return 'open' if instance_info is not None else 'close'
+
+			# If portal is closed, we cannot provide any other information
+			if instance_info is None:
+				return None
+
 			if field == 'id':
 				return instance_info['InstanceId']
 			if field == 'type':
@@ -65,7 +76,7 @@ class ShowPortalInfoCommand(BaseCommand):
 			if field == 'remote':
 				return '{}@{}'.format(portal_spec['spot_instance']['remote_user'], instance_info['PublicDnsName'])
 
-		return ''
+		return None
 
 	def show_full_info(self):
 		print('Running `{}` command.\n'.format(self.cmd()))
