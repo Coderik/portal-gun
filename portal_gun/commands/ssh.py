@@ -22,7 +22,7 @@ class SshCommand(BaseCommand):
 		parser.add_argument('portal', help='Name of portal')
 		parser.add_argument('-t', '--tmux', dest='tmux', nargs='?', default=None, const=cls.DEFAULT_TMUX_SESSION,
 							metavar='session', help='Automatically open tmux session upon connection. '
-													'Default session name is "{}".'.format(cls.DEFAULT_TMUX_SESSION))
+													'Default session name is `{}`.'.format(cls.DEFAULT_TMUX_SESSION))
 
 	def run(self):
 		# Find, parse and validate configs
@@ -56,7 +56,7 @@ class SshCommand(BaseCommand):
 				'-t',
 				'""tmux attach-session -t {sess} || tmux new-session -s {sess}""'.format(sess=self._args.tmux)
 			]
-			print('Upon connection will open tmux session "{}".'.format(self._args.tmux))
+			print('Upon connection will open tmux session `{}`.'.format(self._args.tmux))
 
 		print('')
 
