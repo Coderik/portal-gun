@@ -1,5 +1,3 @@
-import boto3
-
 from portal_gun.commands.base_command import BaseCommand
 from portal_gun.context_managers.pass_step_or_die import pass_step_or_die
 from portal_gun.context_managers.no_print import NoPrint
@@ -19,7 +17,7 @@ class ShowPortalInfoCommand(BaseCommand):
 
 	@classmethod
 	def add_subparser(cls, subparsers):
-		parser = subparsers.add_parser(cls.cmd(), help='Show portal status')
+		parser = subparsers.add_parser(cls.cmd(), help='Show information about portal')
 		parser.add_argument('portal', help='Name of portal')
 		parser.add_argument('-f', '--field', dest='field', help='Print value for a specified field ({}).'
 							.format(', '.join(cls.FIELDS)))
