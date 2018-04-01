@@ -6,7 +6,7 @@ from portal_gun.configuration.validation import validate_portal_spec, validate_c
 from portal_gun.configuration.exceptions import ConfigValidationError
 
 
-def run_preflight_steps(args):
+def get_config(args):
 	# Parse global config
 	with pass_step_or_die('Parse config file', 'Could not parse config file', errors=[IOError, ValueError]):
 		with open(args.config) as config_file:
@@ -16,6 +16,10 @@ def run_preflight_steps(args):
 	with pass_step_or_die('Validate config', 'Config is not valid', errors=[ConfigValidationError]):
 		validate_config(config)
 
+	return config
+
+
+def get_portal_spec(args):
 	# Get portal name and spec file
 	portal_name = args.portal.rsplit('.', 1)[0]
 	spec_filename = '{}.json'.format(portal_name)
@@ -37,4 +41,4 @@ def run_preflight_steps(args):
 						  errors=[ConfigValidationError]):
 		validate_portal_spec(portal_spec)
 
-	return config, portal_spec, portal_name
+	return portal_spec, portal_name

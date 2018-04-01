@@ -10,7 +10,7 @@ from fabric.context_managers import prefix
 
 from portal_gun.commands.base_command import BaseCommand
 from portal_gun.context_managers.pass_step_or_die import pass_step_or_die
-from portal_gun.commands.helpers import run_preflight_steps
+from portal_gun.commands.helpers import get_config, get_portal_spec
 from portal_gun.commands.aws_client import AwsClient
 import portal_gun.aws_helpers as aws_helpers
 from portal_gun.commands import common
@@ -35,9 +35,10 @@ class OpenPortalCommand(BaseCommand):
 		print('Running `{}` command.\n'.format(self.cmd()))
 
 		# Find, parse and validate configs
-		print('Make preflight checks:')
-		config, portal_spec, portal_name = run_preflight_steps(self._args)
-		print('Preflight checks are complete.\n')
+		print('Checking configuration...')
+		config = get_config(self._args)
+		portal_spec, portal_name = get_portal_spec(self._args)
+		print('Done.\n')
 
 		# Create AWS client
 		aws = AwsClient(config['aws_access_key'], config['aws_secret_key'], config['aws_region'])
@@ -133,7 +134,7 @@ class OpenPortalCommand(BaseCommand):
 		while True:
 			# Repeat status request every N seconds
 			if datetime.datetime.now() > next_time:
-				volumes = aws.get_volumes(volume_ids)
+				volumes = aws.get_volumes_by_id(volume_ids)
 				next_time += datetime.timedelta(seconds=1)
 
 			# Compute time spend in waiting

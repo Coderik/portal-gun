@@ -1,7 +1,7 @@
 from portal_gun.commands.base_command import BaseCommand
 from portal_gun.context_managers.pass_step_or_die import pass_step_or_die
 from portal_gun.context_managers.no_print import NoPrint
-from portal_gun.commands.helpers import run_preflight_steps
+from portal_gun.commands.helpers import get_config, get_portal_spec
 from portal_gun.commands.aws_client import AwsClient
 
 
@@ -38,7 +38,7 @@ class ShowPortalInfoCommand(BaseCommand):
 
 		with NoPrint():
 			# Find, parse and validate configs
-			config, portal_spec, portal_name = run_preflight_steps(self._args)
+			config, portal_spec, portal_name = get_portal_spec(self._args)
 
 			if field == 'name':
 				return portal_name
@@ -80,9 +80,10 @@ class ShowPortalInfoCommand(BaseCommand):
 		print('Running `{}` command.\n'.format(self.cmd()))
 
 		# Find, parse and validate configs
-		print('Make preflight checks:')
-		config, portal_spec, portal_name = run_preflight_steps(self._args)
-		print('Preflight checks are complete.\n')
+		print('Checking configuration...')
+		config = get_config(self._args)
+		portal_spec, portal_name = get_portal_spec(self._args)
+		print('Done.\n')
 
 		# Create AWS client
 		aws = AwsClient(config['aws_access_key'], config['aws_secret_key'], config['aws_region'])

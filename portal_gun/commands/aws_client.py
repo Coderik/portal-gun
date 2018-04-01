@@ -75,9 +75,30 @@ class AwsClient(object):
 
 		return response['SpotFleetRequestConfigs'][0]
 
-	def get_volumes(self, volume_ids):
+	def get_volumes_by_id(self, volume_ids):
 		# Make request
 		response = self.ec2_client().describe_volumes(VolumeIds=volume_ids)
+
+		# Check status code
+		status_code = response['ResponseMetadata']['HTTPStatusCode']
+		if status_code != 200:
+			exit('Error: request failed with status code {}.'.format(status_code))
+
+		return response['Volumes']
+
+	def get_volumes(self, filters=None):
+		if filters is None:
+			filters = {}
+
+		# Define a function that ensures that its argument is a list
+		def as_list(x):
+			return x if type(x) == list else [x]
+
+		# Convert filters to the expected form
+		aws_filters = [{'Name': k, 'Values': as_list(v)} for k, v in filters.iteritems()]
+
+		# Make request
+		response = self.ec2_client().describe_volumes(Filters=aws_filters)
 
 		# Check status code
 		status_code = response['ResponseMetadata']['HTTPStatusCode']
