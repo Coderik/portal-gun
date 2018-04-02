@@ -1,17 +1,14 @@
 import threading
-import datetime
-import signal
 
-import boto3
-from fabric.tasks import execute
 from fabric.api import env, hide
 from fabric.contrib.project import rsync_project
+from fabric.tasks import execute
 
+from portal_gun.aws.aws_client import AwsClient
+from portal_gun.commands import common
 from portal_gun.commands.base_command import BaseCommand
 from portal_gun.commands.helpers import get_config, get_portal_spec
 from portal_gun.context_managers.pass_step_or_die import pass_step_or_die
-from portal_gun.commands.aws_client import AwsClient
-from portal_gun.commands import common
 
 
 def sync_files(local_path, remote_path, is_upload, is_recursive):
@@ -75,7 +72,7 @@ class OpenChannelCommand(BaseCommand):
 
 		# Get current user
 		with pass_step_or_die('User identity',
-							  'Could not get current user identity'.format(portal_name)):
+							  'Could not get current user identity'):
 			user = aws.get_user_identity()
 
 		# Get spot instance

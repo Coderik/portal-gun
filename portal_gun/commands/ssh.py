@@ -1,9 +1,9 @@
+import os
+
+from portal_gun.aws.aws_client import AwsClient
 from portal_gun.commands.base_command import BaseCommand
 from portal_gun.commands.helpers import get_config, get_portal_spec
-from portal_gun.commands.aws_client import AwsClient
 from portal_gun.context_managers.no_print import NoPrint
-
-import os
 
 
 class SshCommand(BaseCommand):

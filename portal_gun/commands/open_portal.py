@@ -1,19 +1,19 @@
 from __future__ import print_function
-import datetime
-import time
-import sys
 
-import boto3
-from fabric.tasks import execute
+import datetime
+import sys
+import time
+
 from fabric.api import env, hide, sudo, run
 from fabric.context_managers import prefix
+from fabric.tasks import execute
 
-from portal_gun.commands.base_command import BaseCommand
-from portal_gun.context_managers.pass_step_or_die import pass_step_or_die
-from portal_gun.commands.helpers import get_config, get_portal_spec
-from portal_gun.commands.aws_client import AwsClient
 import portal_gun.aws_helpers as aws_helpers
+from portal_gun.aws.aws_client import AwsClient
 from portal_gun.commands import common
+from portal_gun.commands.base_command import BaseCommand
+from portal_gun.commands.helpers import get_config, get_portal_spec
+from portal_gun.context_managers.pass_step_or_die import pass_step_or_die
 
 
 class OpenPortalCommand(BaseCommand):
@@ -47,7 +47,7 @@ class OpenPortalCommand(BaseCommand):
 
 		# Get current user
 		with pass_step_or_die('Get user identity',
-							  'Could not get current user identity'.format(portal_name)):
+							  'Could not get current user identity'):
 			user = aws.get_user_identity()
 
 		# Ensure that instance does not yet exist

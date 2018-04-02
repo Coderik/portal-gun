@@ -6,7 +6,7 @@ from portal_gun.commands import fill_subparsers, create_command
 
 def main():
 	# Parse command line arguments
-	parser = argparse.ArgumentParser(prog='Portal Gun')
+	parser = argparse.ArgumentParser(prog='PortalGun')
 	subparsers = parser.add_subparsers(title='commands', dest='command')
 
 	# Add sub argparsers for commands

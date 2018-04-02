@@ -16,9 +16,19 @@ class AwsClient(object):
 		# Check status code
 		status_code = response['ResponseMetadata']['HTTPStatusCode']
 		if status_code != 200:
-			exit('Error: request failed with status code {}.'.format(status_code))
+			exit('Error: request to AWS failed with status code {}.'.format(status_code))
 
 		return response
+
+	def get_availability_zones(self):
+		response = self.ec2_client().describe_availability_zones()
+
+		# Check status code
+		status_code = response['ResponseMetadata']['HTTPStatusCode']
+		if status_code != 200:
+			exit('Error: request to AWS failed with status code {}.'.format(status_code))
+
+		return [zone['ZoneName'] for zone in response['AvailabilityZones'] if zone['State'] == 'available']
 
 	def find_spot_instance(self, portal_name, user):
 		# Make request
@@ -30,7 +40,7 @@ class AwsClient(object):
 		# Check status code
 		status_code = response['ResponseMetadata']['HTTPStatusCode']
 		if status_code != 200:
-			exit('Error: request failed with status code {}.'.format(status_code))
+			exit('Error: request to AWS failed with status code {}.'.format(status_code))
 
 		if len(response['Reservations']) == 0 or len(response['Reservations'][0]['Instances']) == 0:
 			return None
@@ -44,7 +54,7 @@ class AwsClient(object):
 		# Check status code
 		status_code = response['ResponseMetadata']['HTTPStatusCode']
 		if status_code != 200:
-			exit('Error: request failed with status code {}'.format(status_code))
+			exit('Error: request to AWS failed with status code {}'.format(status_code))
 
 		if len(response['Reservations']) == 0 or len(response['Reservations'][0]['Instances']) == 0:
 			return None
@@ -57,7 +67,7 @@ class AwsClient(object):
 		# Check status code
 		status_code = response['ResponseMetadata']['HTTPStatusCode']
 		if status_code != 200:
-			exit('Error: request failed with status code {}'.format(status_code))
+			exit('Error: request to AWS failed with status code {}'.format(status_code))
 
 		return response['ActiveInstances']
 
@@ -68,7 +78,7 @@ class AwsClient(object):
 		# Check status code
 		status_code = response['ResponseMetadata']['HTTPStatusCode']
 		if status_code != 200:
-			exit('Error: request failed with status code {}.'.format(status_code))
+			exit('Error: request to AWS failed with status code {}.'.format(status_code))
 
 		if len(response['SpotFleetRequestConfigs']) == 0:
 			return None
@@ -82,7 +92,7 @@ class AwsClient(object):
 		# Check status code
 		status_code = response['ResponseMetadata']['HTTPStatusCode']
 		if status_code != 200:
-			exit('Error: request failed with status code {}.'.format(status_code))
+			exit('Error: request to AWS failed with status code {}.'.format(status_code))
 
 		return response['Volumes']
 
@@ -94,7 +104,7 @@ class AwsClient(object):
 		def as_list(x):
 			return x if type(x) == list else [x]
 
-		# Convert filters to the expected form
+		# Convert list of filters to the expected format
 		aws_filters = [{'Name': k, 'Values': as_list(v)} for k, v in filters.iteritems()]
 
 		# Make request
@@ -103,9 +113,32 @@ class AwsClient(object):
 		# Check status code
 		status_code = response['ResponseMetadata']['HTTPStatusCode']
 		if status_code != 200:
-			exit('Error: request failed with status code {}.'.format(status_code))
+			exit('Error: request to AWS failed with status code {}.'.format(status_code))
 
 		return response['Volumes']
+
+	def create_volume(self, size, availability_zone, tags=None, snapshot_id=None):
+		if tags is None:
+			tags = {}
+		if snapshot_id is None:
+			snapshot_id = ''
+
+		# Convert list of tags to the expected format
+		aws_tags = [{'Key': k, 'Value': v} for k, v in tags.iteritems()]
+
+		# Make request
+		response = self.ec2_client().create_volume(AvailabilityZone=availability_zone,
+												   Size=size,
+												   VolumeType='gp2',
+												   SnapshotId=snapshot_id,
+												   TagSpecifications=[{'ResourceType': 'volume', 'Tags': aws_tags}])
+
+		# Check status code
+		status_code = response['ResponseMetadata']['HTTPStatusCode']
+		if status_code != 200:
+			exit('Error: request to AWS failed with status code {}.'.format(status_code))
+
+		return response['VolumeId']
 
 	def attach_volume(self, instance_id, volume_id, device):
 		response = self.ec2_client().attach_volume(InstanceId=instance_id,
@@ -115,7 +148,7 @@ class AwsClient(object):
 		# Check status code
 		status_code = response['ResponseMetadata']['HTTPStatusCode']
 		if status_code != 200:
-			exit('Error: request failed with status code {}.'.format(status_code))
+			exit('Error: request to AWS failed with status code {}.'.format(status_code))
 
 		return response
 
@@ -125,7 +158,7 @@ class AwsClient(object):
 		# Check status code
 		status_code = response['ResponseMetadata']['HTTPStatusCode']
 		if status_code != 200:
-			exit('Error: request failed with status code {}'.format(status_code))
+			exit('Error: request to AWS failed with status code {}'.format(status_code))
 
 		return response
 
@@ -136,7 +169,7 @@ class AwsClient(object):
 		# Check status code
 		status_code = response['ResponseMetadata']['HTTPStatusCode']
 		if status_code != 200:
-			exit('Error: request failed with status code {}'.format(status_code))
+			exit('Error: request to AWS failed with status code {}'.format(status_code))
 
 		# TODO: check the response to make sure request was canceled
 		return True
