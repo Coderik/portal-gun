@@ -32,9 +32,10 @@ class VolumeCommand(BaseCommand):
 		parser_create.add_argument('-z', '--zone', dest='zone', default=None, help='Set availability zone for new volume.')
 		parser_create.add_argument('-S', '--snapshot', dest='snapshot', default=None,
 								   help='Set Id of a snapshot to create new volume from.')
+		parser_create.add_argument('-t', '--tags', nargs='+', dest='tags', metavar='key:value',
+								   help='Set user tags for new volume.')
 		parser_create.set_defaults(actor=cls.create_volume)
 		# TODO: add silent mode
-		# TODO: add option for user-defined tags
 
 		parser_list = subcommand_parsers.add_parser('list', help='List volumes')
 		parser_list.set_defaults(actor=cls.list_volumes)
@@ -117,6 +118,12 @@ class VolumeCommand(BaseCommand):
 
 		# Set tags
 		tags = {'Name': name, 'created-by': user['Arn'], 'dimension': 'C-137'}
+
+		# Add user-specified tags, if provided
+		if args.tags is not None:
+			tags.update({key_value[0]: key_value[1] for key_value in
+						 [tag.split(':') for tag in args.tags]
+						 if len(key_value) == 2 and len(key_value[0]) > 0 and len(key_value[1]) > 0})
 
 		# Create volume
 		volume_id = aws.create_volume(size, availability_zone, tags, snapshot_id)
