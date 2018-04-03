@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 from portal_gun.aws.aws_client import AwsClient
+from portal_gun.aws.exceptions import AwsRequestError
 from portal_gun.commands.base_command import BaseCommand
 from portal_gun.commands.helpers import get_config
 from portal_gun.helpers.pretty_print import print_volume
@@ -56,18 +57,22 @@ class VolumeCommand(BaseCommand):
 		self._args.actor(self, aws, self._args)
 
 	def list_volumes(self, aws, args):
-		volumes = aws.get_volumes()
+		try:
+			volumes = aws.get_volumes()
+		except AwsRequestError as e:
+			exit('Error: {}'.format(e))
+
 		map(print_volume, volumes)
 
 	def create_volume(self, aws, args):
 		print('Requesting data from AWS:')
 
 		# Get current user
-		with pass_step_or_die('Get user identity', 'Could not get current user identity'):
+		with pass_step_or_die('Get user identity', 'Could not get current user identity', errors=[AwsRequestError]):
 			user = aws.get_user_identity()
 
 		# Ensure that instance does not yet exist
-		with pass_step_or_die('Get Availability Zones', 'Could not get Availability Zones', errors=[KeyError]):
+		with pass_step_or_die('Get Availability Zones', 'Could not get Availability Zones', errors=[AwsRequestError]):
 			availability_zones = aws.get_availability_zones()
 
 		print('Done.\n')

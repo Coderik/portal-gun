@@ -1,4 +1,7 @@
 import boto3
+from botocore.exceptions import EndpointConnectionError
+
+from portal_gun.aws.exceptions import AwsRequestError
 
 
 class AwsClient(object):
@@ -10,37 +13,42 @@ class AwsClient(object):
 		self._sts_client = None
 
 	def get_user_identity(self):
-		# Mare request
-		response = self.sts_client().get_caller_identity()
+		try:
+			response = self.sts_client().get_caller_identity()
+		except EndpointConnectionError as e:
+			raise AwsRequestError('Could not make request to AWS.')
 
-		# Check status code
-		status_code = response['ResponseMetadata']['HTTPStatusCode']
-		if status_code != 200:
-			exit('Error: request to AWS failed with status code {}.'.format(status_code))
+		self._check_status_code(response)
 
 		return response
 
 	def get_availability_zones(self):
-		response = self.ec2_client().describe_availability_zones()
+		try:
+			response = self.ec2_client().describe_availability_zones()
+		except EndpointConnectionError as e:
+			raise AwsRequestError('Could not make request to AWS.')
 
-		# Check status code
-		status_code = response['ResponseMetadata']['HTTPStatusCode']
-		if status_code != 200:
-			exit('Error: request to AWS failed with status code {}.'.format(status_code))
+		self._check_status_code(response)
 
-		return [zone['ZoneName'] for zone in response['AvailabilityZones'] if zone['State'] == 'available']
+		try:
+			zones = [zone['ZoneName'] for zone in response['AvailabilityZones'] if zone['State'] == 'available']
+		except KeyError as e:
+			raise AwsRequestError('Response from AWS has unexpected format: {}.'.format(e.message))
+
+		return zones
 
 	def find_spot_instance(self, portal_name, user):
-		# Make request
+		# Define filters
 		filters = [{'Name': 'tag:portal-name', 'Values': [portal_name]},
 				   {'Name': 'tag:created-by', 'Values': [user]},
 				   {'Name': 'instance-state-name', 'Values': ['running', 'pending']}]
-		response = self.ec2_client().describe_instances(Filters=filters)
 
-		# Check status code
-		status_code = response['ResponseMetadata']['HTTPStatusCode']
-		if status_code != 200:
-			exit('Error: request to AWS failed with status code {}.'.format(status_code))
+		try:
+			response = self.ec2_client().describe_instances(Filters=filters)
+		except EndpointConnectionError as e:
+			raise AwsRequestError('Could not make request to AWS.')
+
+		self._check_status_code(response)
 
 		if len(response['Reservations']) == 0 or len(response['Reservations'][0]['Instances']) == 0:
 			return None
@@ -48,13 +56,12 @@ class AwsClient(object):
 		return response['Reservations'][0]['Instances'][0]
 
 	def get_instance(self, instance_id):
-		# Make request
-		response = self.ec2_client().describe_instances(InstanceIds=[instance_id])
+		try:
+			response = self.ec2_client().describe_instances(InstanceIds=[instance_id])
+		except EndpointConnectionError as e:
+			raise AwsRequestError('Could not make request to AWS.')
 
-		# Check status code
-		status_code = response['ResponseMetadata']['HTTPStatusCode']
-		if status_code != 200:
-			exit('Error: request to AWS failed with status code {}'.format(status_code))
+		self._check_status_code(response)
 
 		if len(response['Reservations']) == 0 or len(response['Reservations'][0]['Instances']) == 0:
 			return None
@@ -62,23 +69,22 @@ class AwsClient(object):
 		return response['Reservations'][0]['Instances'][0]
 
 	def get_spot_fleet_instances(self, spot_fleet_request_id):
-		response = self.ec2_client().describe_spot_fleet_instances(SpotFleetRequestId=spot_fleet_request_id)
+		try:
+			response = self.ec2_client().describe_spot_fleet_instances(SpotFleetRequestId=spot_fleet_request_id)
+		except EndpointConnectionError as e:
+			raise AwsRequestError('Could not make request to AWS.')
 
-		# Check status code
-		status_code = response['ResponseMetadata']['HTTPStatusCode']
-		if status_code != 200:
-			exit('Error: request to AWS failed with status code {}'.format(status_code))
+		self._check_status_code(response)
 
 		return response['ActiveInstances']
 
 	def get_spot_fleet_request(self, spot_fleet_request_id):
-		# Make request
-		response = self.ec2_client().describe_spot_fleet_requests(SpotFleetRequestIds=[spot_fleet_request_id])
+		try:
+			response = self.ec2_client().describe_spot_fleet_requests(SpotFleetRequestIds=[spot_fleet_request_id])
+		except EndpointConnectionError as e:
+			raise AwsRequestError('Could not make request to AWS.')
 
-		# Check status code
-		status_code = response['ResponseMetadata']['HTTPStatusCode']
-		if status_code != 200:
-			exit('Error: request to AWS failed with status code {}.'.format(status_code))
+		self._check_status_code(response)
 
 		if len(response['SpotFleetRequestConfigs']) == 0:
 			return None
@@ -86,13 +92,12 @@ class AwsClient(object):
 		return response['SpotFleetRequestConfigs'][0]
 
 	def get_volumes_by_id(self, volume_ids):
-		# Make request
-		response = self.ec2_client().describe_volumes(VolumeIds=volume_ids)
+		try:
+			response = self.ec2_client().describe_volumes(VolumeIds=volume_ids)
+		except EndpointConnectionError as e:
+			raise AwsRequestError('Could not make request to AWS.')
 
-		# Check status code
-		status_code = response['ResponseMetadata']['HTTPStatusCode']
-		if status_code != 200:
-			exit('Error: request to AWS failed with status code {}.'.format(status_code))
+		self._check_status_code(response)
 
 		return response['Volumes']
 
@@ -108,12 +113,12 @@ class AwsClient(object):
 		aws_filters = [{'Name': k, 'Values': as_list(v)} for k, v in filters.iteritems()]
 
 		# Make request
-		response = self.ec2_client().describe_volumes(Filters=aws_filters)
+		try:
+			response = self.ec2_client().describe_volumes(Filters=aws_filters)
+		except EndpointConnectionError as e:
+			raise AwsRequestError('Could not make request to AWS.')
 
-		# Check status code
-		status_code = response['ResponseMetadata']['HTTPStatusCode']
-		if status_code != 200:
-			exit('Error: request to AWS failed with status code {}.'.format(status_code))
+		self._check_status_code(response)
 
 		return response['Volumes']
 
@@ -127,49 +132,49 @@ class AwsClient(object):
 		aws_tags = [{'Key': k, 'Value': v} for k, v in tags.iteritems()]
 
 		# Make request
-		response = self.ec2_client().create_volume(AvailabilityZone=availability_zone,
-												   Size=size,
-												   VolumeType='gp2',
-												   SnapshotId=snapshot_id,
-												   TagSpecifications=[{'ResourceType': 'volume', 'Tags': aws_tags}])
+		try:
+			response = self.ec2_client().create_volume(AvailabilityZone=availability_zone,
+													   Size=size,
+													   VolumeType='gp2',
+													   SnapshotId=snapshot_id,
+													   TagSpecifications=[{'ResourceType': 'volume', 'Tags': aws_tags}])
+		except EndpointConnectionError as e:
+			raise AwsRequestError('Could not make request to AWS.')
 
-		# Check status code
-		status_code = response['ResponseMetadata']['HTTPStatusCode']
-		if status_code != 200:
-			exit('Error: request to AWS failed with status code {}.'.format(status_code))
+		self._check_status_code(response)
 
 		return response['VolumeId']
 
 	def attach_volume(self, instance_id, volume_id, device):
-		response = self.ec2_client().attach_volume(InstanceId=instance_id,
-												   VolumeId=volume_id,
-												   Device=device)
+		try:
+			response = self.ec2_client().attach_volume(InstanceId=instance_id,
+													   VolumeId=volume_id,
+													   Device=device)
+		except EndpointConnectionError as e:
+			raise AwsRequestError('Could not make request to AWS.')
 
-		# Check status code
-		status_code = response['ResponseMetadata']['HTTPStatusCode']
-		if status_code != 200:
-			exit('Error: request to AWS failed with status code {}.'.format(status_code))
+		self._check_status_code(response)
 
 		return response
 
 	def request_spot_fleet(self, config):
-		response = self.ec2_client().request_spot_fleet(SpotFleetRequestConfig=config)
+		try:
+			response = self.ec2_client().request_spot_fleet(SpotFleetRequestConfig=config)
+		except EndpointConnectionError as e:
+			raise AwsRequestError('Could not make request to AWS.')
 
-		# Check status code
-		status_code = response['ResponseMetadata']['HTTPStatusCode']
-		if status_code != 200:
-			exit('Error: request to AWS failed with status code {}'.format(status_code))
+		self._check_status_code(response)
 
 		return response
 
 	def cancel_spot_fleet_request(self, spot_fleet_request_id):
-		response = self.ec2_client().cancel_spot_fleet_requests(SpotFleetRequestIds=[spot_fleet_request_id],
-																TerminateInstances=True)
+		try:
+			response = self.ec2_client().cancel_spot_fleet_requests(SpotFleetRequestIds=[spot_fleet_request_id],
+																	TerminateInstances=True)
+		except EndpointConnectionError as e:
+			raise AwsRequestError('Could not make request to AWS.')
 
-		# Check status code
-		status_code = response['ResponseMetadata']['HTTPStatusCode']
-		if status_code != 200:
-			exit('Error: request to AWS failed with status code {}'.format(status_code))
+		self._check_status_code(response)
 
 		# TODO: check the response to make sure request was canceled
 		return True
@@ -190,3 +195,8 @@ class AwsClient(object):
 											aws_secret_access_key=self._secret_key)
 
 		return self._sts_client
+
+	def _check_status_code(self, response):
+		status_code = response['ResponseMetadata']['HTTPStatusCode']
+		if status_code != 200:
+			raise AwsRequestError('Request to AWS failed with status code {}.'.format(status_code))
