@@ -8,7 +8,7 @@ from fabric.api import env, hide, sudo, run
 from fabric.context_managers import prefix
 from fabric.tasks import execute
 
-import portal_gun.aws_helpers as aws_helpers
+import portal_gun.aws.helpers as aws_helpers
 from portal_gun.aws.aws_client import AwsClient
 from portal_gun.commands import common
 from portal_gun.commands.base_command import BaseCommand
