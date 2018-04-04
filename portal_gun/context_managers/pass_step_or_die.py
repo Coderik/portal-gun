@@ -2,7 +2,7 @@ from __future__ import print_function
 import sys
 
 
-class PassStepOrDie(object):
+class pass_step_or_die(object):
 	_message_width = 40
 	_filling_character = ' '
 	_error_offset = '\t'
@@ -10,15 +10,15 @@ class PassStepOrDie(object):
 
 	@staticmethod
 	def set_message_width(value):
-		PassStepOrDie._message_width = value
+		pass_step_or_die._message_width = value
 
 	@staticmethod
 	def set_filling_character(value):
-		PassStepOrDie._filling_character = value
+		pass_step_or_die._filling_character = value
 
 	@staticmethod
 	def set_error_offset(value):
-		PassStepOrDie._error_offset = value
+		pass_step_or_die._error_offset = value
 
 	def __init__(self, check_message, failure_message, errors=None, print_error=True):
 		self._check_message = check_message
@@ -29,9 +29,9 @@ class PassStepOrDie(object):
 	def __enter__(self):
 		print('{msg:{fill}<{width}}'
 			  .format(msg=self._check_message,
-					  fill=PassStepOrDie._filling_character,
-					  width=PassStepOrDie._message_width)
-			  .expandtabs(PassStepOrDie._tab_width),
+					  fill=pass_step_or_die._filling_character,
+					  width=pass_step_or_die._message_width)
+			  .expandtabs(pass_step_or_die._tab_width),
 			  end='')
 
 		# Ensure stdout is flushed immediately
@@ -49,22 +49,18 @@ class PassStepOrDie(object):
 					# Print expected error and exit
 					if self._failure_message is not None and self._print_error:
 						exit('{offset}{}: {}'
-							 .format(self._failure_message, exc_value, offset=PassStepOrDie._error_offset)
-							 .expandtabs(PassStepOrDie._tab_width))
+							 .format(self._failure_message, exc_value, offset=pass_step_or_die._error_offset)
+							 .expandtabs(pass_step_or_die._tab_width))
 					elif self._failure_message is not None:
 						exit('{offset}{}'
-							 .format(self._failure_message, offset=PassStepOrDie._error_offset)
-							 .expandtabs(PassStepOrDie._tab_width))
+							 .format(self._failure_message, offset=pass_step_or_die._error_offset)
+							 .expandtabs(pass_step_or_die._tab_width))
 					elif self._print_error:
 						exit('{offset}{}'
-							 .format(exc_value, offset=PassStepOrDie._error_offset)
-							 .expandtabs(PassStepOrDie._tab_width))
+							 .format(exc_value, offset=pass_step_or_die._error_offset)
+							 .expandtabs(pass_step_or_die._tab_width))
 					else:
 						exit()
 
 			# Do not suppress unexpected errors
 			return False
-
-
-def pass_step_or_die(check_message, failure_message, errors=None, print_error=True):
-	return PassStepOrDie(check_message, failure_message, errors, print_error)

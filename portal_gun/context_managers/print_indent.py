@@ -1,7 +1,7 @@
 import sys
 
 
-class PrintIndent:
+class print_indent:
     """
     Context manager for implicit indentation of text printed to stdout and stderr.
     All output within the corresponding 'with' statement gets indented by a specified
@@ -14,11 +14,11 @@ class PrintIndent:
     def set_default_indent(value):
         assert type(value) == int
         assert value >= 0
-        PrintIndent._default_indent = value
+        print_indent._default_indent = value
 
     def __init__(self, indent=None):
         if indent is None:
-            indent = PrintIndent._default_indent
+            indent = print_indent._default_indent
         else:
             assert type(indent) == int
             assert indent >= 0
@@ -28,8 +28,8 @@ class PrintIndent:
     def __enter__(self):
         self._original_stdout = sys.stdout
         self._original_stderr = sys.stderr
-        sys.stdout = PrintIndent.Wrapper(sys.stdout, self._indent)
-        sys.stderr = PrintIndent.Wrapper(sys.stderr, self._indent)
+        sys.stdout = print_indent.Wrapper(sys.stdout, self._indent)
+        sys.stderr = print_indent.Wrapper(sys.stderr, self._indent)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         sys.stdout = self._original_stdout

@@ -1,9 +1,9 @@
 from portal_gun.aws.aws_client import AwsClient
 from portal_gun.commands.base_command import BaseCommand
 from portal_gun.commands.helpers import get_config, get_portal_spec
-from portal_gun.context_managers.no_print import NoPrint
+from portal_gun.context_managers.no_print import no_print
 from portal_gun.context_managers.pass_step_or_die import pass_step_or_die
-from portal_gun.context_managers.print_indent import PrintIndent
+from portal_gun.context_managers.print_scope import print_scope
 
 
 class ShowPortalInfoCommand(BaseCommand):
@@ -37,7 +37,7 @@ class ShowPortalInfoCommand(BaseCommand):
 		if field not in self.FIELDS:
 			return None
 
-		with NoPrint():
+		with no_print():
 			# Find, parse and validate configs
 			config, portal_spec, portal_name = get_portal_spec(self._args)
 
@@ -81,18 +81,14 @@ class ShowPortalInfoCommand(BaseCommand):
 		print('Running `{}` command.\n'.format(self.cmd()))
 
 		# Find, parse and validate configs
-		print('Checking configuration...')
-		with PrintIndent():
+		with print_scope('Checking configuration:', 'Done.\n'):
 			config = get_config(self._args)
 			portal_spec, portal_name = get_portal_spec(self._args)
-		print('Done.\n')
 
 		# Create AWS client
 		aws = AwsClient(config['aws_access_key'], config['aws_secret_key'], config['aws_region'])
 
-		print('Retrieve associated resources:')
-
-		with PrintIndent():
+		with print_scope('Retrieving data from AWS:', 'Done.\n'):
 			# Get current user
 			with pass_step_or_die('User identity',
 								  'Could not get current user identity'.format(portal_name)):
@@ -104,39 +100,29 @@ class ShowPortalInfoCommand(BaseCommand):
 								  errors=[RuntimeError]):
 				instance_info = aws.find_spot_instance(portal_name, aws_user['Arn'])
 
-		print('Done.\n')
-
 		# Print status
 		if instance_info is not None:
-			print('Summary:')
-			with PrintIndent():
+			with print_scope('Summary:', ''):
 				print('Name:              {}'.format(portal_name))
 				print('Status:            open')
-			print('')
 
-			print('Instance:')
-			with PrintIndent():
+			with print_scope('Instance:', ''):
 				print('Id:                {}'.format(instance_info['InstanceId']))
 				print('Type:              {}'.format(instance_info['InstanceType']))
 				print('Public IP:         {}'.format(instance_info['PublicIpAddress']))
 				print('Public DNS name:   {}'.format(instance_info['PublicDnsName']))
 				print('User:              {}'.format(portal_spec['spot_instance']['remote_user']))
-			print('')
 
-			print('Persistent volumes:'.expandtabs(4))
-			with PrintIndent():
+			with print_scope('Persistent volumes:', ''):
 				for volume_spec in portal_spec['persistent_volumes']:
 					print('{}: {}'.format(volume_spec['device'], volume_spec['mount_point']))
 
 			# Print ssh command
-			print('')
-			print('Use the following command to connect to the remote machine:')
-			with PrintIndent():
+			with print_scope('Use the following command to connect to the remote machine:'):
 				print('ssh -i "{}" {}@{}'.format(portal_spec['spot_instance']['ssh_key_file'],
 												 portal_spec['spot_instance']['remote_user'],
 												 instance_info['PublicDnsName']))
 		else:
-			print('Summary:')
-			with PrintIndent():
+			with print_scope('Summary:'):
 				print('Name:              {}'.format(portal_name))
 				print('Status:            close')

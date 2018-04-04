@@ -14,7 +14,7 @@ from portal_gun.commands import common
 from portal_gun.commands.base_command import BaseCommand
 from portal_gun.commands.helpers import get_config, get_portal_spec
 from portal_gun.context_managers.pass_step_or_die import pass_step_or_die
-from portal_gun.context_managers.print_indent import PrintIndent
+from portal_gun.context_managers.print_scope import print_scope
 
 
 class OpenPortalCommand(BaseCommand):
@@ -36,18 +36,14 @@ class OpenPortalCommand(BaseCommand):
 		print('Running `{}` command.\n'.format(self.cmd()))
 
 		# Find, parse and validate configs
-		print('Checking configuration...')
-		with PrintIndent():
+		with print_scope('Checking configuration:', 'Done.\n'):
 			config = get_config(self._args)
 			portal_spec, portal_name = get_portal_spec(self._args)
-		print('Done.\n')
 
 		# Create AWS client
 		aws = AwsClient(config['aws_access_key'], config['aws_secret_key'], config['aws_region'])
 
-		print('Check requested resources:')
-
-		with PrintIndent():
+		with print_scope('Retrieving data from AWS:', 'Done.\n'):
 			# Get current user
 			with pass_step_or_die('Get user identity',
 								  'Could not get current user identity'):
@@ -66,10 +62,8 @@ class OpenPortalCommand(BaseCommand):
 				volume_ids = [volume_spec['volume_id'] for volume_spec in portal_spec['persistent_volumes']]
 				common.check_volumes_availability(aws, volume_ids)
 
-		print('Required resources are available.\n')
-
 		# Make request for Spot instance
-		print('Request a Spot instance:')
+		print('Requesting a Spot instance:')
 		request_config = aws_helpers.single_instance_spot_fleet_request(portal_spec, portal_name, user['Arn'])
 		response = aws.request_spot_fleet(request_config)
 		spot_fleet_request_id = response['SpotFleetRequestId']
@@ -122,7 +116,7 @@ class OpenPortalCommand(BaseCommand):
 		instance_info = aws.get_instance(instance_id)
 
 		# Make requests to attach persistent volumes
-		print('Requests attachment of persistent volumes:')
+		print('Attaching persistent volumes:')
 		for volume_spec in portal_spec['persistent_volumes']:
 			response = aws.attach_volume(instance_id, volume_spec['volume_id'], volume_spec['device'])
 
@@ -160,46 +154,39 @@ class OpenPortalCommand(BaseCommand):
 		env.hosts = instance_info['PublicDnsName']
 		env.connection_attempts = self._fabric_retry_limit
 
-		print('Prepare the instance:')
+		with print_scope('Preparing the instance:', 'Instance is ready.\n'):
+			# Mount persistent volumes
+			for i in range(len(portal_spec['persistent_volumes'])):
+				with pass_step_or_die('Mount volume #{}'.format(i),
+									  'Could not mount volume',
+									  errors=[RuntimeError]):
+					volume_spec = portal_spec['persistent_volumes'][i]
+					with hide('running', 'stdout'):
+						execute(self.mount_volume, volume_spec['device'], volume_spec['mount_point'])
 
-		# Mount persistent volumes
-		for i in range(len(portal_spec['persistent_volumes'])):
-			with pass_step_or_die('Mount volume #{}'.format(i),
-								  'Could not mount volume',
-								  errors=[RuntimeError]):
-				volume_spec = portal_spec['persistent_volumes'][i]
-				with hide('running', 'stdout'):
-					execute(self.mount_volume, volume_spec['device'], volume_spec['mount_point'])
-
-		# TODO: consider importing and executing custom fab tasks instead
-		# Install extra python packages, if needed
-		if 'extra_python_packages' in portal_spec['spot_instance'] and \
-						len(portal_spec['spot_instance']['extra_python_packages']) > 0:
-			with pass_step_or_die('Install extra python packages',
-								  'Could not install python packages',
-								  errors=[RuntimeError]):
-				python_packages = portal_spec['spot_instance']['extra_python_packages']
-				virtual_env = portal_spec['spot_instance']['python_virtual_env']
-				with hide('running', 'stdout'):
-					execute(self.install_python_packages, python_packages, virtual_env)
-
-		print('Instance is ready.\n')
+			# TODO: consider importing and executing custom fab tasks instead
+			# Install extra python packages, if needed
+			if 'extra_python_packages' in portal_spec['spot_instance'] and \
+							len(portal_spec['spot_instance']['extra_python_packages']) > 0:
+				with pass_step_or_die('Install extra python packages',
+									  'Could not install python packages',
+									  errors=[RuntimeError]):
+					python_packages = portal_spec['spot_instance']['extra_python_packages']
+					virtual_env = portal_spec['spot_instance']['python_virtual_env']
+					with hide('running', 'stdout'):
+						execute(self.install_python_packages, python_packages, virtual_env)
 
 		# Print summary
 		print('Portal `{}` is now opened.'.format(portal_name))
-		print('Summary:')
-		with PrintIndent():
-			print('Instance:'.expandtabs(4))
-			with PrintIndent():
+		with print_scope('Summary:', ''):
+			with print_scope('Instance:'):
 				print('Id:              {}'.format(instance_id))
 				print('Type:            {}'.format(instance_info['InstanceType']))
 				print('Public IP:       {}'.format(instance_info['PublicIpAddress']))
 				print('Public DNS name: {}'.format(instance_info['PublicDnsName']))
-			print('Persistent volumes:')
-			with PrintIndent():
+			with print_scope('Persistent volumes:'):
 				for volume_spec in portal_spec['persistent_volumes']:
 					print('{}: {}'.format(volume_spec['device'], volume_spec['mount_point']))
-		print('')
 
 		# Print ssh command
 		print('Use the following command to connect to the remote machine:')

@@ -6,7 +6,7 @@ from portal_gun.commands.base_command import BaseCommand
 from portal_gun.commands.helpers import get_config
 from portal_gun.helpers.pretty_print import print_volume
 from portal_gun.context_managers.pass_step_or_die import pass_step_or_die
-from portal_gun.context_managers.print_indent import PrintIndent
+from portal_gun.context_managers.print_scope import print_scope
 
 
 class VolumeCommand(BaseCommand):
@@ -48,10 +48,8 @@ class VolumeCommand(BaseCommand):
 		print('Running `{}` command.'.format(self.cmd()))
 
 		# Find, parse and validate configs
-		print('Checking configuration:')
-		with PrintIndent():
+		with print_scope('Checking configuration:', 'Done.\n'):
 			config = get_config(self._args)
-		print('Done.\n')
 
 		# Create AWS client
 		aws = AwsClient(config['aws_access_key'], config['aws_secret_key'], config['aws_region'])
@@ -68,9 +66,7 @@ class VolumeCommand(BaseCommand):
 		map(print_volume, volumes)
 
 	def create_volume(self, aws, args):
-		print('Requesting data from AWS:')
-
-		with PrintIndent():
+		with print_scope('Retrieving data from AWS:', 'Done.\n'):
 			# Get current user
 			with pass_step_or_die('Get user identity', 'Could not get current user identity', errors=[AwsRequestError]):
 				user = aws.get_user_identity()
@@ -78,8 +74,6 @@ class VolumeCommand(BaseCommand):
 			# Ensure that instance does not yet exist
 			with pass_step_or_die('Get Availability Zones', 'Could not get Availability Zones', errors=[AwsRequestError]):
 				availability_zones = aws.get_availability_zones()
-
-		print('Done.\n')
 
 		print('Creating new persistent volume.')
 
