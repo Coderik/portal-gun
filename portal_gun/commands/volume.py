@@ -13,6 +13,8 @@ class VolumeCommand(BaseCommand):
 	def __init__(self, args):
 		BaseCommand.__init__(self, args)
 
+		self._proper_tag_key = 'dimension'
+		self._proper_tag_value = 'C-137'
 		self._default_size = 50
 		self._min_size = 1  # Gb
 		self._max_size = 16384  # Gb
@@ -38,9 +40,10 @@ class VolumeCommand(BaseCommand):
 		parser_create.set_defaults(actor=cls.create_volume)
 		# TODO: add silent mode
 
-		parser_list = subcommand_parsers.add_parser('list', help='List volumes')
+		parser_list = subcommand_parsers.add_parser('list', help='List persistent volumes')
+		parser_list.add_argument('-a', '--all', dest='all', action='store_true',
+								 help='Show all volumes, not only ones created by Portal Gun.')
 		parser_list.set_defaults(actor=cls.list_volumes)
-		# TODO: add option to list all, list only created by Portal Gun by default
 
 		# TODO: add set-name (or rename), delete subcommands
 
@@ -62,6 +65,9 @@ class VolumeCommand(BaseCommand):
 			volumes = aws.get_volumes()
 		except AwsRequestError as e:
 			exit('Error: {}'.format(e))
+
+		if not args.all:
+			volumes = (volume for volume in volumes if self.is_proper(volume))
 
 		map(print_volume, volumes)
 
@@ -114,15 +120,25 @@ class VolumeCommand(BaseCommand):
 				 .format(availability_zone, ', '.join(availability_zones)))
 
 		# Set tags
-		tags = {'Name': name, 'created-by': user['Arn'], 'dimension': 'C-137'}
+		tags = {'Name': name, 'created-by': user['Arn'], self._proper_tag_key: self._proper_tag_value}
 
 		# Add user-specified tags, if provided
 		if args.tags is not None:
 			tags.update({key_value[0]: key_value[1] for key_value in
-						 [tag.split(':') for tag in args.tags]
+						 (tag.split(':') for tag in args.tags)
 						 if len(key_value) == 2 and len(key_value[0]) > 0 and len(key_value[1]) > 0})
 
 		# Create volume
 		volume_id = aws.create_volume(size, availability_zone, tags, snapshot_id)
 
 		print('New persistent volume has been created.\nVolume id: {}'.format(volume_id))
+
+	def is_proper(self, volume):
+		try:
+			for tag in volume['Tags']:
+				if tag['Key'] == self._proper_tag_key and tag['Value'] == self._proper_tag_value:
+					return True
+		except KeyError:
+			return False
+
+		return False
