@@ -9,6 +9,7 @@ from portal_gun.commands import common
 from portal_gun.commands.base_command import BaseCommand
 from portal_gun.commands.helpers import get_config, get_portal_spec
 from portal_gun.context_managers.pass_step_or_die import pass_step_or_die
+from portal_gun.context_managers.print_indent import PrintIndent
 
 
 def sync_files(local_path, remote_path, is_upload, is_recursive):
@@ -53,15 +54,16 @@ class OpenChannelCommand(BaseCommand):
 
 		# Find, parse and validate configs
 		print('Checking configuration...')
-		config = get_config(self._args)
-		portal_spec, portal_name = get_portal_spec(self._args)
+		with PrintIndent():
+			config = get_config(self._args)
+			portal_spec, portal_name = get_portal_spec(self._args)
 
-		# Ensure there is at least one channel spec
-		with pass_step_or_die('Check specifications for channels',
-							  'Portal specification does not contain any channel', print_error=False):
-			channels = portal_spec['channels']
-			if len(channels) == 0:
-				raise Exception()
+			# Ensure there is at least one channel spec
+			with pass_step_or_die('Check specifications for channels',
+								  'Portal specification does not contain any channel', print_error=False):
+				channels = portal_spec['channels']
+				if len(channels) == 0:
+					raise Exception()
 
 		print('Done.\n')
 
@@ -70,16 +72,17 @@ class OpenChannelCommand(BaseCommand):
 
 		print('Retrieve associated resources:')
 
-		# Get current user
-		with pass_step_or_die('User identity',
-							  'Could not get current user identity'):
-			user = aws.get_user_identity()
+		with PrintIndent():
+			# Get current user
+			with pass_step_or_die('User identity',
+								  'Could not get current user identity'):
+				user = aws.get_user_identity()
 
-		# Get spot instance
-		with pass_step_or_die('Spot instance',
-							  'Portal `{}` does not seem to be opened'.format(portal_name),
-							  errors=[RuntimeError]):
-			spot_instance = common.get_spot_instance(aws, portal_name, user['Arn'])
+			# Get spot instance
+			with pass_step_or_die('Spot instance',
+								  'Portal `{}` does not seem to be opened'.format(portal_name),
+								  errors=[RuntimeError]):
+				spot_instance = common.get_spot_instance(aws, portal_name, user['Arn'])
 
 		print('Done.\n')
 
@@ -87,11 +90,13 @@ class OpenChannelCommand(BaseCommand):
 
 		# Print information about the channels
 		print('Channels defined for portal `{}`:'.format(portal_name))
-		for i in range(len(channels)):
-			channel = channels[i]
-			print('\tChannel #{} ({}):'.format(i, channel['direction'].upper()).expandtabs(4))
-			print('\t\tLocal:   {}'.format(channel['local_path']).expandtabs(4))
-			print('\t\tRemote:  {}'.format(channel['remote_path']).expandtabs(4))
+		with PrintIndent():
+			for i in range(len(channels)):
+				channel = channels[i]
+				print('Channel #{} ({}):'.format(i, channel['direction'].upper()))
+				with PrintIndent():
+					print('Local:   {}'.format(channel['local_path']))
+					print('Remote:  {}'.format(channel['remote_path']))
 		print('')
 
 		# Specify remote host for ssh

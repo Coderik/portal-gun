@@ -14,6 +14,7 @@ from portal_gun.commands import common
 from portal_gun.commands.base_command import BaseCommand
 from portal_gun.commands.helpers import get_config, get_portal_spec
 from portal_gun.context_managers.pass_step_or_die import pass_step_or_die
+from portal_gun.context_managers.print_indent import PrintIndent
 
 
 class OpenPortalCommand(BaseCommand):
@@ -36,8 +37,9 @@ class OpenPortalCommand(BaseCommand):
 
 		# Find, parse and validate configs
 		print('Checking configuration...')
-		config = get_config(self._args)
-		portal_spec, portal_name = get_portal_spec(self._args)
+		with PrintIndent():
+			config = get_config(self._args)
+			portal_spec, portal_name = get_portal_spec(self._args)
 		print('Done.\n')
 
 		# Create AWS client
@@ -45,23 +47,24 @@ class OpenPortalCommand(BaseCommand):
 
 		print('Check requested resources:')
 
-		# Get current user
-		with pass_step_or_die('Get user identity',
-							  'Could not get current user identity'):
-			user = aws.get_user_identity()
+		with PrintIndent():
+			# Get current user
+			with pass_step_or_die('Get user identity',
+								  'Could not get current user identity'):
+				user = aws.get_user_identity()
 
-		# Ensure that instance does not yet exist
-		with pass_step_or_die('Check already running instances',
-							  'Portal `{}` seems to be already opened'.format(portal_name),
-							  errors=[RuntimeError]):
-			common.check_instance_not_exists(aws, portal_name, user['Arn'])
+			# Ensure that instance does not yet exist
+			with pass_step_or_die('Check already running instances',
+								  'Portal `{}` seems to be already opened'.format(portal_name),
+								  errors=[RuntimeError]):
+				common.check_instance_not_exists(aws, portal_name, user['Arn'])
 
-		# Ensure persistent volumes are available
-		with pass_step_or_die('Check volumes availability',
-							  'Not all volumes are available',
-							  errors=[RuntimeError]):
-			volume_ids = [volume_spec['volume_id'] for volume_spec in portal_spec['persistent_volumes']]
-			common.check_volumes_availability(aws, volume_ids)
+			# Ensure persistent volumes are available
+			with pass_step_or_die('Check volumes availability',
+								  'Not all volumes are available',
+								  errors=[RuntimeError]):
+				volume_ids = [volume_spec['volume_id'] for volume_spec in portal_spec['persistent_volumes']]
+				common.check_volumes_availability(aws, volume_ids)
 
 		print('Required resources are available.\n')
 
@@ -185,14 +188,17 @@ class OpenPortalCommand(BaseCommand):
 		# Print summary
 		print('Portal `{}` is now opened.'.format(portal_name))
 		print('Summary:')
-		print('\tInstance:'.expandtabs(4))
-		print('\t\tId:              {}'.format(instance_id).expandtabs(4))
-		print('\t\tType:            {}'.format(instance_info['InstanceType']).expandtabs(4))
-		print('\t\tPublic IP:       {}'.format(instance_info['PublicIpAddress']).expandtabs(4))
-		print('\t\tPublic DNS name: {}'.format(instance_info['PublicDnsName']).expandtabs(4))
-		print('\tPersistent volumes:'.expandtabs(4))
-		for volume_spec in portal_spec['persistent_volumes']:
-			print('\t\t{}: {}'.format(volume_spec['device'], volume_spec['mount_point']).expandtabs(4))
+		with PrintIndent():
+			print('Instance:'.expandtabs(4))
+			with PrintIndent():
+				print('Id:              {}'.format(instance_id))
+				print('Type:            {}'.format(instance_info['InstanceType']))
+				print('Public IP:       {}'.format(instance_info['PublicIpAddress']))
+				print('Public DNS name: {}'.format(instance_info['PublicDnsName']))
+			print('Persistent volumes:')
+			with PrintIndent():
+				for volume_spec in portal_spec['persistent_volumes']:
+					print('{}: {}'.format(volume_spec['device'], volume_spec['mount_point']))
 		print('')
 
 		# Print ssh command

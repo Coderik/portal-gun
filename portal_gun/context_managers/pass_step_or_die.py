@@ -5,8 +5,7 @@ import sys
 class PassStepOrDie(object):
 	_message_width = 40
 	_filling_character = ' '
-	_message_offset = '\t'
-	_error_offset = '\t\t'
+	_error_offset = '\t'
 	_tab_width = 4
 
 	@staticmethod
@@ -16,10 +15,6 @@ class PassStepOrDie(object):
 	@staticmethod
 	def set_filling_character(value):
 		PassStepOrDie._filling_character = value
-
-	@staticmethod
-	def set_message_offset(value):
-		PassStepOrDie._message_offset = value
 
 	@staticmethod
 	def set_error_offset(value):
@@ -32,11 +27,10 @@ class PassStepOrDie(object):
 		self._print_error = print_error
 
 	def __enter__(self):
-		print('{offset}{msg:{fill}<{width}}'
+		print('{msg:{fill}<{width}}'
 			  .format(msg=self._check_message,
 					  fill=PassStepOrDie._filling_character,
-					  width=PassStepOrDie._message_width,
-					  offset=PassStepOrDie._message_offset)
+					  width=PassStepOrDie._message_width)
 			  .expandtabs(PassStepOrDie._tab_width),
 			  end='')
 

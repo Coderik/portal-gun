@@ -2,6 +2,7 @@ import argparse
 from sys import exit
 
 from portal_gun.commands import fill_subparsers, create_command
+from portal_gun.context_managers.print_indent import PrintIndent
 
 
 def main():
