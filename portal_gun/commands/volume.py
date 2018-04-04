@@ -15,6 +15,7 @@ class VolumeCommand(BaseCommand):
 
 		self._proper_tag_key = 'dimension'
 		self._proper_tag_value = 'C-137'
+		self._service_tags = [self._proper_tag_key, 'created-by']
 		self._default_size = 50
 		self._min_size = 1  # Gb
 		self._max_size = 16384  # Gb
@@ -66,9 +67,10 @@ class VolumeCommand(BaseCommand):
 		except AwsRequestError as e:
 			exit('Error: {}'.format(e))
 
-		if not args.all:
-			volumes = (volume for volume in volumes if self.is_proper(volume))
+		# Transform list of volumes: filter volumes (if needed), filter tags of every volume
+		volumes = (self.filter_tags(volume) for volume in volumes if args.all or self.is_proper(volume))
 
+		# Pretty print list of volumes
 		map(print_volume, volumes)
 
 	def create_volume(self, aws, args):
@@ -132,6 +134,12 @@ class VolumeCommand(BaseCommand):
 		volume_id = aws.create_volume(size, availability_zone, tags, snapshot_id)
 
 		print('New persistent volume has been created.\nVolume id: {}'.format(volume_id))
+
+	def filter_tags(self, volume):
+		if 'Tags' in volume:
+			volume['Tags'] = [tag for tag in volume['Tags'] if tag['Key'] not in self._service_tags]
+
+		return volume
 
 	def is_proper(self, volume):
 		try:
