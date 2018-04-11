@@ -2,7 +2,7 @@ from portal_gun.aws.aws_client import AwsClient
 from portal_gun.commands.base_command import BaseCommand
 from portal_gun.commands.helpers import get_config, get_portal_spec
 from portal_gun.context_managers.no_print import no_print
-from portal_gun.context_managers.pass_step_or_die import pass_step_or_die
+from portal_gun.context_managers.step import step
 from portal_gun.context_managers.print_scope import print_scope
 
 
@@ -90,14 +90,12 @@ class ShowPortalInfoCommand(BaseCommand):
 
 		with print_scope('Retrieving data from AWS:', 'Done.\n'):
 			# Get current user
-			with pass_step_or_die('User identity',
-								  'Could not get current user identity'.format(portal_name)):
+			with step('User identity'):
 				aws_user = aws.get_user_identity()
 
 			# Get spot instance
-			with pass_step_or_die('Spot instance',
-								  'Portal `{}` does not seem to be opened'.format(portal_name),
-								  errors=[RuntimeError]):
+			with step('Spot instance', error_message='Portal `{}` does not seem to be opened'.format(portal_name),
+					  catch=[RuntimeError]):
 				instance_info = aws.find_spot_instance(portal_name, aws_user['Arn'])
 
 		# Print status

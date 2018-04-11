@@ -13,7 +13,7 @@ from portal_gun.aws.aws_client import AwsClient
 from portal_gun.commands import common
 from portal_gun.commands.base_command import BaseCommand
 from portal_gun.commands.helpers import get_config, get_portal_spec
-from portal_gun.context_managers.pass_step_or_die import pass_step_or_die
+from portal_gun.context_managers.step import step
 from portal_gun.context_managers.print_scope import print_scope
 
 
@@ -45,20 +45,17 @@ class OpenPortalCommand(BaseCommand):
 
 		with print_scope('Retrieving data from AWS:', 'Done.\n'):
 			# Get current user
-			with pass_step_or_die('Get user identity',
-								  'Could not get current user identity'):
+			with step('Get user identity'):
 				user = aws.get_user_identity()
 
 			# Ensure that instance does not yet exist
-			with pass_step_or_die('Check already running instances',
-								  'Portal `{}` seems to be already opened'.format(portal_name),
-								  errors=[RuntimeError]):
+			with step('Check already running instances',
+					  error_message='Portal `{}` seems to be already opened'.format(portal_name),
+					  catch=[RuntimeError]):
 				common.check_instance_not_exists(aws, portal_name, user['Arn'])
 
 			# Ensure persistent volumes are available
-			with pass_step_or_die('Check volumes availability',
-								  'Not all volumes are available',
-								  errors=[RuntimeError]):
+			with step('Check volumes availability', catch=[RuntimeError]):
 				volume_ids = [volume_spec['volume_id'] for volume_spec in portal_spec['persistent_volumes']]
 				common.check_volumes_availability(aws, volume_ids)
 
@@ -157,9 +154,7 @@ class OpenPortalCommand(BaseCommand):
 		with print_scope('Preparing the instance:', 'Instance is ready.\n'):
 			# Mount persistent volumes
 			for i in range(len(portal_spec['persistent_volumes'])):
-				with pass_step_or_die('Mount volume #{}'.format(i),
-									  'Could not mount volume',
-									  errors=[RuntimeError]):
+				with step('Mount volume #{}'.format(i), error_message='Could not mount volume', catch=[RuntimeError]):
 					volume_spec = portal_spec['persistent_volumes'][i]
 					with hide('running', 'stdout'):
 						execute(self.mount_volume, volume_spec['device'], volume_spec['mount_point'])
@@ -168,9 +163,8 @@ class OpenPortalCommand(BaseCommand):
 			# Install extra python packages, if needed
 			if 'extra_python_packages' in portal_spec['spot_instance'] and \
 							len(portal_spec['spot_instance']['extra_python_packages']) > 0:
-				with pass_step_or_die('Install extra python packages',
-									  'Could not install python packages',
-									  errors=[RuntimeError]):
+				with step('Install extra python packages', error_message='Could not install python packages',
+						  catch=[RuntimeError]):
 					python_packages = portal_spec['spot_instance']['extra_python_packages']
 					virtual_env = portal_spec['spot_instance']['python_virtual_env']
 					with hide('running', 'stdout'):

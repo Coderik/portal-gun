@@ -28,4 +28,4 @@ def check_volumes_availability(aws_client, volume_ids):
 
 	if not all([volume['State'] == 'available' for volume in volumes]):
 		states = ['{} is {}'.format(volume['VolumeId'], volume['State']) for volume in volumes]
-		raise RuntimeError(', '.join(states))
+		raise RuntimeError('Not all volumes are available: {}'.format(', '.join(states)))

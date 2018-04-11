@@ -1,11 +1,10 @@
 from __future__ import print_function
 
 from portal_gun.aws.aws_client import AwsClient
-from portal_gun.aws.exceptions import AwsRequestError
 from portal_gun.commands.base_command import BaseCommand
 from portal_gun.commands.helpers import get_config
 from portal_gun.helpers.pretty_print import print_volume
-from portal_gun.context_managers.pass_step_or_die import pass_step_or_die
+from portal_gun.context_managers.step import step
 from portal_gun.context_managers.print_scope import print_scope
 
 
@@ -16,7 +15,7 @@ class VolumeCommand(BaseCommand):
 		self._proper_tag_key = 'dimension'
 		self._proper_tag_value = 'C-137'
 		self._service_tags = [self._proper_tag_key, 'created-by']
-		self._default_size = 50
+		self._default_size = 50  # Gb
 		self._min_size = 1  # Gb
 		self._max_size = 16384  # Gb
 
@@ -56,7 +55,7 @@ class VolumeCommand(BaseCommand):
 								   help='Add user tags for volume.')
 		parser_update.set_defaults(actor=cls.update_volume)
 
-		# TODO: add set-name (or rename), delete subcommands
+		# TODO: add delete subcommand
 
 	def run(self):
 		print('Running `{}` command.'.format(self.cmd()))
@@ -69,10 +68,7 @@ class VolumeCommand(BaseCommand):
 		aws = AwsClient(config['aws_access_key'], config['aws_secret_key'], config['aws_region'])
 
 		# Call corresponding actor to handle selected subcommand
-		try:
-			self._args.actor(self, aws, self._args)
-		except AwsRequestError as e:
-			exit('Error: {}'.format(e))
+		self._args.actor(self, aws, self._args)
 
 	def list_volumes(self, aws, args):
 		volumes = aws.get_volumes()
@@ -86,11 +82,11 @@ class VolumeCommand(BaseCommand):
 	def create_volume(self, aws, args):
 		with print_scope('Retrieving data from AWS:', 'Done.\n'):
 			# Get current user
-			with pass_step_or_die('Get user identity', 'Could not get current user identity', errors=[AwsRequestError]):
+			with step('Get user identity'):
 				user = aws.get_user_identity()
 
 			# Ensure that instance does not yet exist
-			with pass_step_or_die('Get Availability Zones', 'Could not get Availability Zones', errors=[AwsRequestError]):
+			with step('Get Availability Zones'):
 				availability_zones = aws.get_availability_zones()
 
 		print('Creating new persistent volume.')
