@@ -128,8 +128,8 @@ class AwsClient(object):
 		if snapshot_id is None:
 			snapshot_id = ''
 
-		# Convert list of tags to the expected format
-		aws_tags = [{'Key': k, 'Value': v} for k, v in tags.iteritems()]
+		# Convert tags to the expected format
+		aws_tags = self._to_aws_tags(tags)
 
 		# Make request
 		try:
@@ -156,6 +156,25 @@ class AwsClient(object):
 		self._check_status_code(response)
 
 		return response
+
+	def add_tags(self, resource_id, tags):
+		"""
+		Add or overwrite tags for an EC2 resource (e.g. an instance or a volume).
+		:param resource_id:
+		:param tags: dict
+		:return:
+		"""
+		# Convert tags to the expected format
+		aws_tags = self._to_aws_tags(tags)
+
+		try:
+			response = self.ec2_client().create_tags(Resources=[resource_id], Tags=aws_tags)
+		except EndpointConnectionError as e:
+			raise AwsRequestError('Could not make request to AWS.')
+
+		self._check_status_code(response)
+
+		return True
 
 	def request_spot_fleet(self, config):
 		try:
@@ -200,3 +219,12 @@ class AwsClient(object):
 		status_code = response['ResponseMetadata']['HTTPStatusCode']
 		if status_code != 200:
 			raise AwsRequestError('Request to AWS failed with status code {}.'.format(status_code))
+
+	def _to_aws_tags(self, tags):
+		"""
+		Convert tags from dictionary to a format expected by AWS:
+		[{'Key': key, 'Value': value}]
+		:param tags
+		:return:
+		"""
+		return [{'Key': k, 'Value': v} for k, v in tags.iteritems()]

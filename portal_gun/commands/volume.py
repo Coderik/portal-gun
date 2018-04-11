@@ -29,6 +29,13 @@ class VolumeCommand(BaseCommand):
 		parser = command_parsers.add_parser(cls.cmd(), help='Group of subcommands related to persistent volumes')
 		subcommand_parsers = parser.add_subparsers(title='subcommands', dest='subcommand')
 
+		# List
+		parser_list = subcommand_parsers.add_parser('list', help='List persistent volumes')
+		parser_list.add_argument('-a', '--all', dest='all', action='store_true',
+								 help='Show all volumes, not only ones created by Portal Gun.')
+		parser_list.set_defaults(actor=cls.list_volumes)
+
+		# Create
 		parser_create = subcommand_parsers.add_parser('create', help='Create new volume')
 		parser_create.add_argument('-n', '--name', dest='name', default=None, help='Set name for new volume.')
 		parser_create.add_argument('-s', '--size', dest='size', default=None, type=int,
@@ -41,10 +48,13 @@ class VolumeCommand(BaseCommand):
 		parser_create.set_defaults(actor=cls.create_volume)
 		# TODO: add silent mode
 
-		parser_list = subcommand_parsers.add_parser('list', help='List persistent volumes')
-		parser_list.add_argument('-a', '--all', dest='all', action='store_true',
-								 help='Show all volumes, not only ones created by Portal Gun.')
-		parser_list.set_defaults(actor=cls.list_volumes)
+		# Update
+		parser_update = subcommand_parsers.add_parser('update', help='Update persistent volume')
+		parser_update.add_argument(dest='volume_id', help='Volume Id.')
+		parser_update.add_argument('-n', '--name', dest='name', help='Update name of volume.')
+		parser_update.add_argument('-t', '--tags', nargs='+', dest='tags', metavar='key:value',
+								   help='Add user tags for volume.')
+		parser_update.set_defaults(actor=cls.update_volume)
 
 		# TODO: add set-name (or rename), delete subcommands
 
@@ -59,13 +69,13 @@ class VolumeCommand(BaseCommand):
 		aws = AwsClient(config['aws_access_key'], config['aws_secret_key'], config['aws_region'])
 
 		# Call corresponding actor to handle selected subcommand
-		self._args.actor(self, aws, self._args)
-
-	def list_volumes(self, aws, args):
 		try:
-			volumes = aws.get_volumes()
+			self._args.actor(self, aws, self._args)
 		except AwsRequestError as e:
 			exit('Error: {}'.format(e))
+
+	def list_volumes(self, aws, args):
+		volumes = aws.get_volumes()
 
 		# Transform list of volumes: filter volumes (if needed), filter tags of every volume
 		volumes = (self.filter_tags(volume) for volume in volumes if args.all or self.is_proper(volume))
@@ -134,6 +144,21 @@ class VolumeCommand(BaseCommand):
 		volume_id = aws.create_volume(size, availability_zone, tags, snapshot_id)
 
 		print('New persistent volume has been created.\nVolume id: {}'.format(volume_id))
+
+	def update_volume(self, aws, args):
+		# Collect user tags
+		tags = args.tags or {}
+
+		# Add 'Name' tag, if specified
+		if args.name is not None:
+			tags.update({'Name': args.name})
+
+		if len(tags) > 0:
+			aws.add_tags(args.volume_id, tags)
+
+			print('Volume {} is updated.'.format(args.volume_id))
+		else:
+			print('Nothing to do.')
 
 	def filter_tags(self, volume):
 		if 'Tags' in volume:
