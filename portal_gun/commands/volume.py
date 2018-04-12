@@ -53,6 +53,7 @@ class VolumeCommand(BaseCommand):
 		parser_update = subcommand_parsers.add_parser('update', help='Update persistent volume')
 		parser_update.add_argument(dest='volume_id', help='Volume Id.')
 		parser_update.add_argument('-n', '--name', dest='name', help='Update name of volume.')
+		parser_update.add_argument('-s', '--size', dest='size', type=int, help='Update size of volume.')
 		parser_update.add_argument('-t', '--tags', nargs='+', dest='tags', metavar='key:value',
 								   help='Add user tags for volume.')
 		parser_update.set_defaults(actor=cls.update_volume)
@@ -159,6 +160,8 @@ class VolumeCommand(BaseCommand):
 		print('New persistent volume has been created.\nVolume id: {}'.format(volume_id))
 
 	def update_volume(self, aws, args):
+		updates = 0
+
 		# Get user tags
 		tags = self.parse_tags(args.tags)
 
@@ -166,9 +169,17 @@ class VolumeCommand(BaseCommand):
 		if args.name is not None:
 			tags.update({'Name': args.name})
 
+		# Update tags, if specified
 		if len(tags) > 0:
 			aws.add_tags(args.volume_id, tags)
+			updates += len(tags)
 
+		# Update size, if specified
+		if args.size is not None:
+			aws.update_volume(args.volume_id, args.size)
+			updates += 1
+
+		if updates > 0:
 			print('Volume {} is updated.'.format(args.volume_id))
 		else:
 			print('Nothing to do.')

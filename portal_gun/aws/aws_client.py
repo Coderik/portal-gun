@@ -148,6 +148,19 @@ class AwsClient(object):
 
 		return response['VolumeId']
 
+	def update_volume(self, volume_id, size):
+		try:
+			response = self.ec2_client().modify_volume(VolumeId=volume_id,
+													   Size=size)
+		except EndpointConnectionError as e:
+			raise AwsRequestError('Could not make request to AWS.')
+		except ClientError as e:
+			raise AwsRequestError(e.message)
+
+		self._check_status_code(response)
+
+		return response
+
 	def attach_volume(self, instance_id, volume_id, device):
 		try:
 			response = self.ec2_client().attach_volume(InstanceId=instance_id,
