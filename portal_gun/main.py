@@ -2,6 +2,7 @@ import argparse
 from sys import exit
 
 from portal_gun.commands import fill_subparsers, create_command
+from portal_gun.commands.exceptions import CommandError
 from portal_gun.context_managers.step import StepError
 from portal_gun.aws.exceptions import AwsRequestError
 
@@ -24,5 +25,5 @@ def main():
 
 	try:
 		command.run()
-	except (StepError, AwsRequestError) as e:
-		print('\t{}'.format(e).expandtabs(4))
+	except (CommandError, StepError, AwsRequestError) as e:
+		print('{}'.format(e).expandtabs(4))

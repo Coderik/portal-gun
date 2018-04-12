@@ -13,6 +13,7 @@ from portal_gun.aws.aws_client import AwsClient
 from portal_gun.commands import common
 from portal_gun.commands.base_command import BaseCommand
 from portal_gun.commands.helpers import get_config, get_portal_spec
+from portal_gun.commands.exceptions import CommandError
 from portal_gun.context_managers.step import step
 from portal_gun.context_managers.print_scope import print_scope
 
@@ -60,49 +61,49 @@ class OpenPortalCommand(BaseCommand):
 				common.check_volumes_availability(aws, volume_ids)
 
 		# Make request for Spot instance
-		print('Requesting a Spot instance:')
-		request_config = aws_helpers.single_instance_spot_fleet_request(portal_spec, portal_name, user['Arn'])
-		response = aws.request_spot_fleet(request_config)
-		spot_fleet_request_id = response['SpotFleetRequestId']
+		instance_type = portal_spec['spot_instance']['instance_type']
+		with print_scope('Requesting a Spot instance of type {}:'.format(instance_type)):
+			request_config = aws_helpers.single_instance_spot_fleet_request(portal_spec, portal_name, user['Arn'])
+			response = aws.request_spot_fleet(request_config)
+			spot_fleet_request_id = response['SpotFleetRequestId']
 
-		# Wait for spot fleet request to be fulfilled
-		print('\tWaiting for the Spot instance to be created...'.expandtabs(4))
-		print('\t(usually it takes around a minute, but might take much longer)'.expandtabs(4))
-		begin_time = datetime.datetime.now()
-		next_time = begin_time
-		try:
-			while True:
-				# Repeat status request every N seconds
-				if datetime.datetime.now() > next_time:
-					spot_fleet_request = aws.get_spot_fleet_request(spot_fleet_request_id)
-					next_time += datetime.timedelta(seconds=5)
+			# Wait for spot fleet request to be fulfilled
+			print('Waiting for the Spot instance to be created...')
+			print('(usually it takes around a minute, but might take much longer)')
+			begin_time = datetime.datetime.now()
+			next_time = begin_time
+			try:
+				while True:
+					# Repeat status request every N seconds
+					if datetime.datetime.now() > next_time:
+						spot_fleet_request = aws.get_spot_fleet_request(spot_fleet_request_id)
+						next_time += datetime.timedelta(seconds=5)
 
-				# Compute time spend in waiting
-				elapsed = datetime.datetime.now() - begin_time
+					# Compute time spend in waiting
+					elapsed = datetime.datetime.now() - begin_time
 
-				# Check request state and activity status
-				request_state = spot_fleet_request['SpotFleetRequestState']
-				if request_state == 'active':
-					spot_request_status = spot_fleet_request['ActivityStatus']
-					if spot_request_status == 'fulfilled':
-						break
+					# Check request state and activity status
+					request_state = spot_fleet_request['SpotFleetRequestState']
+					if request_state == 'active':
+						spot_request_status = spot_fleet_request['ActivityStatus']
+						if spot_request_status == 'fulfilled':
+							break
+						else:
+							print('Elapsed {}s. Spot request is {} and has status `{}`'
+								  .format(elapsed.seconds, request_state, spot_request_status), end='\r')
 					else:
-						print('\r\tElapsed {}s. Spot request is {} and has status `{}`'
-							  .format(elapsed.seconds, request_state, spot_request_status).expandtabs(4), end='\r')
-				else:
-					print('\r\tElapsed {}s. Spot request is {}'.format(elapsed.seconds, request_state).expandtabs(4),
-						  end='\r')
+						print('Elapsed {}s. Spot request is {}'.format(elapsed.seconds, request_state), end='\r')
 
-				sys.stdout.flush()  # ensure stdout is flushed immediately.
-				time.sleep(0.5)
-		except KeyboardInterrupt:
-			print('\nInterrupting...')
+					sys.stdout.flush()  # ensure stdout is flushed immediately.
+					time.sleep(0.5)
+			except KeyboardInterrupt:
+				print('\n')
+				print('Interrupting...')
 
-			# Cancel spot instance request
-			aws.cancel_spot_fleet_request(spot_fleet_request_id)
+				# Cancel spot instance request
+				aws.cancel_spot_fleet_request(spot_fleet_request_id)
 
-			print('Spot request has been cancelled.')
-			exit()
+				raise CommandError('Spot request has been cancelled.')
 		print('\nSpot instance is created in {} seconds.\n'.format((datetime.datetime.now() - begin_time).seconds))
 
 		# Get id of the created instance
@@ -113,36 +114,36 @@ class OpenPortalCommand(BaseCommand):
 		instance_info = aws.get_instance(instance_id)
 
 		# Make requests to attach persistent volumes
-		print('Attaching persistent volumes:')
-		for volume_spec in portal_spec['persistent_volumes']:
-			response = aws.attach_volume(instance_id, volume_spec['volume_id'], volume_spec['device'])
+		with print_scope('Attaching persistent volumes:'):
+			for volume_spec in portal_spec['persistent_volumes']:
+				response = aws.attach_volume(instance_id, volume_spec['volume_id'], volume_spec['device'])
 
-			# Check status code
-			if response['State'] not in ['attaching', 'attached']:
-				exit('Could not attach persistent volume `{}`'.format(volume_spec['volume_id']))
+				# Check status code
+				if response['State'] not in ['attaching', 'attached']:
+					exit('Could not attach persistent volume `{}`'.format(volume_spec['volume_id']))
 
-		# Wait for persistent volumes to be attached
-		print('\tWaiting for the persistent volumes to be attached...'.expandtabs(4))
-		begin_time = datetime.datetime.now()
-		next_time = begin_time
-		while True:
-			# Repeat status request every N seconds
-			if datetime.datetime.now() > next_time:
-				volumes = aws.get_volumes_by_id(volume_ids)
-				next_time += datetime.timedelta(seconds=1)
+			# Wait for persistent volumes to be attached
+			print('Waiting for the persistent volumes to be attached...')
+			begin_time = datetime.datetime.now()
+			next_time = begin_time
+			while True:
+				# Repeat status request every N seconds
+				if datetime.datetime.now() > next_time:
+					volumes = aws.get_volumes_by_id(volume_ids)
+					next_time += datetime.timedelta(seconds=1)
 
-			# Compute time spend in waiting
-			elapsed = datetime.datetime.now() - begin_time
+				# Compute time spend in waiting
+				elapsed = datetime.datetime.now() - begin_time
 
-			if all([volume['Attachments'][0]['State'] == 'attached' for volume in volumes]):
-				break
-			else:
-				states = ['{} - `{}`'.format(volume['VolumeId'], volume['Attachments'][0]['State'])
-						  for volume in volumes]
-				print('\r\tElapsed {}s. States: {}'.format(elapsed.seconds, ', '.join(states)).expandtabs(4), end='\r')
+				if all([volume['Attachments'][0]['State'] == 'attached' for volume in volumes]):
+					break
+				else:
+					states = ['{} - `{}`'.format(volume['VolumeId'], volume['Attachments'][0]['State'])
+							  for volume in volumes]
+					print('Elapsed {}s. States: {}'.format(elapsed.seconds, ', '.join(states)), end='\r')
 
-			sys.stdout.flush()  # ensure stdout is flushed immediately.
-			time.sleep(0.5)
+				sys.stdout.flush()  # ensure stdout is flushed immediately.
+				time.sleep(0.5)
 		print('\nPersistent volumes are attached in {} seconds.\n'.format((datetime.datetime.now() - begin_time).seconds))
 
 		# Configure ssh connection via fabric
@@ -191,8 +192,8 @@ class OpenPortalCommand(BaseCommand):
 	def mount_volume(self, device, mount_point):
 		# Ensure volume contains a file system
 		out = sudo('file -s {}'.format(device))
-		if out == '{}: data':
-			raise RuntimeError('There is no file system on the device `{}`'.format(device))
+		if out == '{}: data'.format(device):
+			sudo('mkfs -t ext4 {}'.format(device))
 
 		# Create mount point
 		run('mkdir -p {}'.format(mount_point))
