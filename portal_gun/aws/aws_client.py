@@ -186,18 +186,39 @@ class AwsClient(object):
 		return response
 
 	@api_caller()
-	def add_tags(self, resource_id, tags):
+	def add_tags(self, resource_ids, tags):
 		"""
 		Add or overwrite tags for an EC2 resource (e.g. an instance or a volume).
-		:param resource_id:
-		:param tags: dict
+		:param resource_ids: One or several resources to be affected
+		:param tags: Dictionary of tags
+		:type resource_ids: string or list
+		:type tags: dict
 		:return:
 		"""
 		# Convert tags to the expected format
 		aws_tags = to_aws_tags(tags)
 
 		# Call API
-		response = self.ec2_client().create_tags(Resources=[resource_id], Tags=aws_tags)
+		response = self.ec2_client().create_tags(Resources=AwsClient._as_list(resource_ids), Tags=aws_tags)
+
+		self._check_status_code(response)
+
+		return True
+
+	@api_caller()
+	def remove_tags(self, resource_ids, keys):
+		"""
+		Remove tags for an EC2 resource (e.g. an instance or a volume).
+		:param resource_ids: One or several resources to be affected
+		:param keys: One or several tag keys to be removed
+		:type resource_ids: string or list
+		:type keys: string or list
+		:return:
+		"""
+		aws_tags = [{'Key': key} for key in AwsClient._as_list(keys)]
+
+		# Call API
+		response = self.ec2_client().delete_tags(Resources=AwsClient._as_list(resource_ids), Tags=aws_tags)
 
 		self._check_status_code(response)
 

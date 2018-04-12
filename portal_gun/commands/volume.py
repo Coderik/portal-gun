@@ -16,7 +16,7 @@ class VolumeCommand(BaseCommand):
 
 		self._proper_tag_key = 'dimension'
 		self._proper_tag_value = 'C-137'
-		self._service_tags = [self._proper_tag_key, 'created-by']
+		self._service_tags = [self._proper_tag_key, 'created-by', 'mount-point']
 		self._default_size = 50  # Gb
 		self._min_size = 1  # Gb
 		self._max_size = 16384  # Gb

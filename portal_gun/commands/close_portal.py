@@ -53,4 +53,10 @@ class ClosePortalCommand(BaseCommand):
 		# Cancel spot instance request
 		aws.cancel_spot_fleet_request(spot_fleet_request_id)
 
+		# Clean up volumes' tags
+		volume_ids = [volume['Ebs']['VolumeId']
+					  for volume in spot_instance['BlockDeviceMappings']
+					  if not volume['Ebs']['DeleteOnTermination']]
+		aws.remove_tags(volume_ids, 'mount-point')
+
 		print('Portal `{}` has been closed.'.format(portal_name))

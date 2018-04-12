@@ -155,8 +155,13 @@ class OpenPortalCommand(BaseCommand):
 			for i in range(len(portal_spec['persistent_volumes'])):
 				with step('Mount volume #{}'.format(i), error_message='Could not mount volume', catch=[RuntimeError]):
 					volume_spec = portal_spec['persistent_volumes'][i]
+
+					# Mount volume
 					with hide('running', 'stdout'):
 						execute(self.mount_volume, volume_spec['device'], volume_spec['mount_point'])
+
+					# Store extra information in volume's tags
+					aws.add_tags(volume_spec['volume_id'], {'mount-point': volume_spec['mount_point']})
 
 			# TODO: consider importing and executing custom fab tasks instead
 			# Install extra python packages, if needed
