@@ -1,9 +1,9 @@
-from portal_gun.commands.base_command import BaseCommand
-from portal_gun.commands.helpers import run_preflight_steps
-from portal_gun.commands.aws_client import AwsClient
-from portal_gun.context_managers.no_print import NoPrint
-
 import os
+
+from portal_gun.aws.aws_client import AwsClient
+from portal_gun.commands.base_command import BaseCommand
+from portal_gun.commands.helpers import get_config, get_portal_spec
+from portal_gun.context_managers.no_print import no_print
 
 
 class SshCommand(BaseCommand):
@@ -26,8 +26,9 @@ class SshCommand(BaseCommand):
 
 	def run(self):
 		# Find, parse and validate configs
-		with NoPrint():
-			config, portal_spec, portal_name = run_preflight_steps(self._args)
+		with no_print():
+			config = get_config(self._args)
+			portal_spec, portal_name = get_portal_spec(self._args)
 
 		# Create AWS client
 		aws = AwsClient(config['aws_access_key'], config['aws_secret_key'], config['aws_region'])

@@ -8,7 +8,6 @@ from portal_gun.configuration.generation import generate_portal_spec
 class GeneratePortalSpecCommand(BaseCommand):
 	def __init__(self, args):
 		BaseCommand.__init__(self, args)
-		self._default_name = 'portal'
 
 	@staticmethod
 	def cmd():
@@ -23,11 +22,7 @@ class GeneratePortalSpecCommand(BaseCommand):
 		print('Running `{}` command.'.format(self.cmd()))
 
 		# Get portal name
-		if len(self._args.props) > 0:
-			portal_name = self._args.portal.rsplit('.', 1)[0]
-		else:
-			print('\tNo portal name was provided, so default name `{}` will be used.'.format(self._default_name))
-			portal_name = self._default_name
+		portal_name = self._args.portal.rsplit('.', 1)[0]
 
 		# Confirm portal name to user
 		print('\tWill create draft specification for `{}` portal.'.format(portal_name))

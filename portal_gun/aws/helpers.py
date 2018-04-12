@@ -1,6 +1,25 @@
 import datetime
 
 
+def to_aws_tags(tags):
+	"""
+	Convert tags from dictionary to a format expected by AWS:
+	[{'Key': key, 'Value': value}]
+	:param tags
+	:return:
+	"""
+	return [{'Key': k, 'Value': v} for k, v in tags.iteritems()]
+
+
+def from_aws_tags(tags):
+	"""
+	Convert tags from AWS format [{'Key': key, 'Value': value}] to dictionary
+	:param tags
+	:return:
+	"""
+	return {tag['Key']: tag['Value'] for tag in tags}
+
+
 def single_instance_spot_fleet_request(portal_spec, portal_name, user):
 	instance_spec = portal_spec['spot_instance']
 	fleet_spec = portal_spec['spot_fleet']

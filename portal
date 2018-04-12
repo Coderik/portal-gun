@@ -1,2 +1,4 @@
 #!/bin/bash
-./env/bin/python -m portal_gun $@
+PG_PATH="$(dirname "$(realpath "$0")")"
+export PYTHONPATH=$PYTHONPATH:$PG_PATH;
+$PG_PATH/env/bin/python -m portal_gun -c $PG_PATH/config.json $@
