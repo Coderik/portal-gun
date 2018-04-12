@@ -34,8 +34,6 @@ class OpenPortalCommand(BaseCommand):
 
 	# TODO: add verbose mode that prints all configs and dry-run mode to check the configs and permissions
 	def run(self):
-		print('Running `{}` command.\n'.format(self.cmd()))
-
 		# Find, parse and validate configs
 		with print_scope('Checking configuration:', 'Done.\n'):
 			config = get_config(self._args)

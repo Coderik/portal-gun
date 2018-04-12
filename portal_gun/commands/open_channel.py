@@ -50,8 +50,6 @@ class OpenChannelCommand(BaseCommand):
 		parser.add_argument('portal', help='Name of portal')
 
 	def run(self):
-		print('Running `{}` command.'.format(self.cmd()))
-
 		# Find, parse and validate configs
 		with print_scope('Checking configuration:', 'Done.\n'):
 			config = get_config(self._args)

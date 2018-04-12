@@ -78,8 +78,6 @@ class ShowPortalInfoCommand(BaseCommand):
 		return None
 
 	def show_full_info(self):
-		print('Running `{}` command.\n'.format(self.cmd()))
-
 		# Find, parse and validate configs
 		with print_scope('Checking configuration:', 'Done.\n'):
 			config = get_config(self._args)
