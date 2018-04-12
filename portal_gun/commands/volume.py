@@ -3,6 +3,7 @@ from __future__ import print_function
 from portal_gun.aws.aws_client import AwsClient
 from portal_gun.commands.base_command import BaseCommand
 from portal_gun.commands.helpers import get_config
+from portal_gun.commands.exceptions import CommandError
 from portal_gun.helpers.pretty_print import print_volume
 from portal_gun.context_managers.step import step
 from portal_gun.context_managers.print_scope import print_scope
@@ -55,7 +56,12 @@ class VolumeCommand(BaseCommand):
 								   help='Add user tags for volume.')
 		parser_update.set_defaults(actor=cls.update_volume)
 
-		# TODO: add delete subcommand
+		# Delete
+		parser_delete = subcommand_parsers.add_parser('delete', help='Delete persistent volume')
+		parser_delete.add_argument(dest='volume_id', help='Volume Id.')
+		parser_delete.add_argument('-f', '--force', dest='force', action='store_true',
+								   help='Delete any volume, even not owned.')
+		parser_delete.set_defaults(actor=cls.delete_volume)
 
 	def run(self):
 		print('Running `{}` command.'.format(self.cmd()))
@@ -153,6 +159,23 @@ class VolumeCommand(BaseCommand):
 			print('Volume {} is updated.'.format(args.volume_id))
 		else:
 			print('Nothing to do.')
+
+	def delete_volume(self, aws, args):
+		with print_scope('Retrieving data from AWS:', 'Done.\n'):
+			# Get current user
+			with step('Get user identity'):
+				user = aws.get_user_identity()
+
+			# Ensure that instance does not yet exist
+			with step('Get volume details'):
+				volume = aws.get_volumes_by_id(args.volume_id)[0]
+
+		if not self.is_proper(volume) and not args.force:
+			raise CommandError('Volume {} is not owned by you. Use -f flag to force deletion.'.format(args.volume_id))
+
+		aws.delete_volume(args.volume_id)
+
+		print('Volume {} is deleted.'.format(args.volume_id))
 
 	def filter_tags(self, volume):
 		if 'Tags' in volume:

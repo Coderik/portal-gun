@@ -1,5 +1,6 @@
 import boto3
 from botocore.exceptions import EndpointConnectionError
+from botocore.exceptions import ClientError
 
 from portal_gun.aws.helpers import to_aws_tags
 from portal_gun.aws.exceptions import AwsRequestError
@@ -93,8 +94,13 @@ class AwsClient(object):
 		return response['SpotFleetRequestConfigs'][0]
 
 	def get_volumes_by_id(self, volume_ids):
+		"""
+		:param volume_ids: One or several volume Ids
+		:type volume_ids: string or list
+		:return:
+		"""
 		try:
-			response = self.ec2_client().describe_volumes(VolumeIds=volume_ids)
+			response = self.ec2_client().describe_volumes(VolumeIds=AwsClient._as_list(volume_ids))
 		except EndpointConnectionError as e:
 			raise AwsRequestError('Could not make request to AWS.')
 
@@ -106,12 +112,8 @@ class AwsClient(object):
 		if filters is None:
 			filters = {}
 
-		# Define a function that ensures that its argument is a list
-		def as_list(x):
-			return x if type(x) == list else [x]
-
 		# Convert list of filters to the expected format
-		aws_filters = [{'Name': k, 'Values': as_list(v)} for k, v in filters.iteritems()]
+		aws_filters = [{'Name': k, 'Values': AwsClient._as_list(v)} for k, v in filters.iteritems()]
 
 		# Make request
 		try:
@@ -153,6 +155,18 @@ class AwsClient(object):
 													   Device=device)
 		except EndpointConnectionError as e:
 			raise AwsRequestError('Could not make request to AWS.')
+
+		self._check_status_code(response)
+
+		return response
+
+	def delete_volume(self, volume_id):
+		try:
+			response = self.ec2_client().delete_volume(VolumeId=volume_id)
+		except EndpointConnectionError as e:
+			raise AwsRequestError('Could not make request to AWS.')
+		except ClientError as e:
+			raise AwsRequestError(e.message)
 
 		self._check_status_code(response)
 
@@ -216,7 +230,18 @@ class AwsClient(object):
 
 		return self._sts_client
 
-	def _check_status_code(self, response):
+	@staticmethod
+	def _as_list(x):
+		"""
+		Ensure that argument is a list
+		:param x: Individual element or list
+		:return: List
+		:rtype: list
+		"""
+		return x if type(x) == list else [x]
+
+	@staticmethod
+	def _check_status_code(response):
 		status_code = response['ResponseMetadata']['HTTPStatusCode']
 		if status_code != 200:
 			raise AwsRequestError('Request to AWS failed with status code {}.'.format(status_code))
