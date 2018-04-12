@@ -3,11 +3,11 @@ from __future__ import print_function
 from portal_gun.aws.aws_client import AwsClient
 from portal_gun.aws.helpers import from_aws_tags
 from portal_gun.commands.base_command import BaseCommand
-from portal_gun.commands.helpers import get_config
 from portal_gun.commands.exceptions import CommandError
-from portal_gun.helpers.pretty_print import print_volume
-from portal_gun.context_managers.step import step
+from portal_gun.configuration.helpers import get_config
 from portal_gun.context_managers.print_scope import print_scope
+from portal_gun.context_managers.step import step
+from portal_gun.helpers.pretty_print import print_volume
 
 
 class VolumeCommand(BaseCommand):

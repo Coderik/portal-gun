@@ -2,8 +2,8 @@ import os
 
 from portal_gun.aws.aws_client import AwsClient
 from portal_gun.commands.base_command import BaseCommand
-from portal_gun.commands.helpers import get_config, get_portal_spec
 from portal_gun.commands.exceptions import CommandError
+from portal_gun.configuration.helpers import get_config, get_portal_spec
 from portal_gun.context_managers.no_print import no_print
 
 
