@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 from portal_gun.aws.aws_client import AwsClient
+from portal_gun.aws.helpers import from_aws_tags
 from portal_gun.commands.base_command import BaseCommand
 from portal_gun.commands.helpers import get_config
 from portal_gun.commands.exceptions import CommandError
@@ -77,10 +78,22 @@ class VolumeCommand(BaseCommand):
 		self._args.actor(self, aws, self._args)
 
 	def list_volumes(self, aws, args):
-		volumes = aws.get_volumes()
+		with print_scope('Retrieving data from AWS:', 'Done.\n'):
+			if not args.all:
+				# Get current user
+				with step('Get user identity'):
+					user = aws.get_user_identity()
 
-		# Transform list of volumes: filter volumes (if needed), filter tags of every volume
-		volumes = (self.filter_tags(volume) for volume in volumes if args.all or self.is_proper(volume))
+				# Get list of volumes owned by user
+				with step('Get list of proper volumes'):
+					volumes = aws.get_volumes(self.get_proper_volume_filter(user))
+			else:
+				# Get list of all volumes
+				with step('Get list of volumes'):
+					volumes = aws.get_volumes()
+
+		# Filter tags of every volume
+		volumes = (self.filter_tags(volume) for volume in volumes)
 
 		# Pretty print list of volumes
 		map(print_volume, volumes)
@@ -170,7 +183,7 @@ class VolumeCommand(BaseCommand):
 			with step('Get volume details'):
 				volume = aws.get_volumes_by_id(args.volume_id)[0]
 
-		if not self.is_proper(volume) and not args.force:
+		if not self.is_proper_volume(volume, user) and not args.force:
 			raise CommandError('Volume {} is not owned by you. Use -f flag to force deletion.'.format(args.volume_id))
 
 		aws.delete_volume(args.volume_id)
@@ -193,12 +206,12 @@ class VolumeCommand(BaseCommand):
 				(tag.split(':') for tag in (tags or []))
 				if len(key_value) == 2 and len(key_value[0]) > 0 and len(key_value[1]) > 0}
 
-	def is_proper(self, volume):
+	def is_proper_volume(self, volume, user):
 		try:
-			for tag in volume['Tags']:
-				if tag['Key'] == self._proper_tag_key and tag['Value'] == self._proper_tag_value:
-					return True
+			tags = from_aws_tags(volume['Tags'])
+			return tags[self._proper_tag_key] == self._proper_tag_value and tags['created-by'] == user['Arn']
 		except KeyError:
 			return False
 
-		return False
+	def get_proper_volume_filter(self, user):
+		return {'tag:{}'.format(self._proper_tag_key): self._proper_tag_value, 'tag:created-by': user['Arn']}
