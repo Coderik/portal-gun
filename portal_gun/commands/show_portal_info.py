@@ -1,8 +1,9 @@
+from portal_gun.aws.aws_client import AwsClient
 from portal_gun.commands.base_command import BaseCommand
-from portal_gun.context_managers.pass_step_or_die import pass_step_or_die
-from portal_gun.context_managers.no_print import NoPrint
-from portal_gun.commands.helpers import run_preflight_steps
-from portal_gun.commands.aws_client import AwsClient
+from portal_gun.commands.helpers import get_config, get_portal_spec
+from portal_gun.context_managers.no_print import no_print
+from portal_gun.context_managers.step import step
+from portal_gun.context_managers.print_scope import print_scope
 
 
 class ShowPortalInfoCommand(BaseCommand):
@@ -36,9 +37,9 @@ class ShowPortalInfoCommand(BaseCommand):
 		if field not in self.FIELDS:
 			return None
 
-		with NoPrint():
+		with no_print():
 			# Find, parse and validate configs
-			config, portal_spec, portal_name = run_preflight_steps(self._args)
+			config, portal_spec, portal_name = get_portal_spec(self._args)
 
 			if field == 'name':
 				return portal_name
@@ -80,54 +81,46 @@ class ShowPortalInfoCommand(BaseCommand):
 		print('Running `{}` command.\n'.format(self.cmd()))
 
 		# Find, parse and validate configs
-		print('Make preflight checks:')
-		config, portal_spec, portal_name = run_preflight_steps(self._args)
-		print('Preflight checks are complete.\n')
+		with print_scope('Checking configuration:', 'Done.\n'):
+			config = get_config(self._args)
+			portal_spec, portal_name = get_portal_spec(self._args)
 
 		# Create AWS client
 		aws = AwsClient(config['aws_access_key'], config['aws_secret_key'], config['aws_region'])
 
-		print('Retrieve associated resources:')
+		with print_scope('Retrieving data from AWS:', 'Done.\n'):
+			# Get current user
+			with step('User identity'):
+				aws_user = aws.get_user_identity()
 
-		# Get current user
-		with pass_step_or_die('User identity',
-							  'Could not get current user identity'.format(portal_name)):
-			aws_user = aws.get_user_identity()
-
-		# Get spot instance
-		with pass_step_or_die('Spot instance',
-							  'Portal `{}` does not seem to be opened'.format(portal_name),
-							  errors=[RuntimeError]):
-			instance_info = aws.find_spot_instance(portal_name, aws_user['Arn'])
-
-		print('Done.\n')
+			# Get spot instance
+			with step('Spot instance', error_message='Portal `{}` does not seem to be opened'.format(portal_name),
+					  catch=[RuntimeError]):
+				instance_info = aws.find_spot_instance(portal_name, aws_user['Arn'])
 
 		# Print status
 		if instance_info is not None:
-			print('Summary:')
-			print('\tName:              {}'.format(portal_name).expandtabs(4))
-			print('\tStatus:            open'.expandtabs(4))
-			print('')
+			with print_scope('Summary:', ''):
+				print('Name:              {}'.format(portal_name))
+				print('Status:            open')
 
-			print('Instance:'.expandtabs(4))
-			print('\tId:                {}'.format(instance_info['InstanceId']).expandtabs(4))
-			print('\tType:              {}'.format(instance_info['InstanceType']).expandtabs(4))
-			print('\tPublic IP:         {}'.format(instance_info['PublicIpAddress']).expandtabs(4))
-			print('\tPublic DNS name:   {}'.format(instance_info['PublicDnsName']).expandtabs(4))
-			print('\tUser:              {}'.format(portal_spec['spot_instance']['remote_user']).expandtabs(4))
-			print('')
+			with print_scope('Instance:', ''):
+				print('Id:                {}'.format(instance_info['InstanceId']))
+				print('Type:              {}'.format(instance_info['InstanceType']))
+				print('Public IP:         {}'.format(instance_info['PublicIpAddress']))
+				print('Public DNS name:   {}'.format(instance_info['PublicDnsName']))
+				print('User:              {}'.format(portal_spec['spot_instance']['remote_user']))
 
-			print('Persistent volumes:'.expandtabs(4))
-			for volume_spec in portal_spec['persistent_volumes']:
-				print('\t{}: {}'.format(volume_spec['device'], volume_spec['mount_point']).expandtabs(4))
+			with print_scope('Persistent volumes:', ''):
+				for volume_spec in portal_spec['persistent_volumes']:
+					print('{}: {}'.format(volume_spec['device'], volume_spec['mount_point']))
 
 			# Print ssh command
-			print('')
-			print('Use the following command to connect to the remote machine:')
-			print('\tssh -i "{}" {}@{}'.format(portal_spec['spot_instance']['ssh_key_file'],
-											 portal_spec['spot_instance']['remote_user'],
-											 instance_info['PublicDnsName']).expandtabs(4))
+			with print_scope('Use the following command to connect to the remote machine:'):
+				print('ssh -i "{}" {}@{}'.format(portal_spec['spot_instance']['ssh_key_file'],
+												 portal_spec['spot_instance']['remote_user'],
+												 instance_info['PublicDnsName']))
 		else:
-			print('Summary:')
-			print('\tName:              {}'.format(portal_name).expandtabs(4))
-			print('\tStatus:            close'.expandtabs(4))
+			with print_scope('Summary:'):
+				print('Name:              {}'.format(portal_name))
+				print('Status:            close')

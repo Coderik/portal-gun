@@ -1,7 +1,7 @@
 import sys, os
 
 
-class NoPrint:
+class no_print:
     def __init__(self):
         pass
 

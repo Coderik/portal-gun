@@ -24,8 +24,8 @@ def check_instance_not_exists(aws_client, portal_name, user):
 
 
 def check_volumes_availability(aws_client, volume_ids):
-	volumes = aws_client.get_volumes(volume_ids)
+	volumes = aws_client.get_volumes_by_id(volume_ids)
 
 	if not all([volume['State'] == 'available' for volume in volumes]):
 		states = ['{} is {}'.format(volume['VolumeId'], volume['State']) for volume in volumes]
-		raise RuntimeError(', '.join(states))
+		raise RuntimeError('Not all volumes are available: {}'.format(', '.join(states)))
