@@ -132,9 +132,7 @@ class VolumeCommand(BaseCommand):
 
 		# Add user-specified tags, if provided
 		if args.tags is not None:
-			tags.update({key_value[0]: key_value[1] for key_value in
-						 (tag.split(':') for tag in args.tags)
-						 if len(key_value) == 2 and len(key_value[0]) > 0 and len(key_value[1]) > 0})
+			tags.update(self.parse_tags(args.tags))
 
 		# Create volume
 		volume_id = aws.create_volume(size, availability_zone, tags, snapshot_id)
@@ -142,8 +140,8 @@ class VolumeCommand(BaseCommand):
 		print('New persistent volume has been created.\nVolume id: {}'.format(volume_id))
 
 	def update_volume(self, aws, args):
-		# Collect user tags
-		tags = args.tags or {}
+		# Get user tags
+		tags = self.parse_tags(args.tags)
 
 		# Add 'Name' tag, if specified
 		if args.name is not None:
@@ -161,6 +159,16 @@ class VolumeCommand(BaseCommand):
 			volume['Tags'] = [tag for tag in volume['Tags'] if tag['Key'] not in self._service_tags]
 
 		return volume
+
+	def parse_tags(self, tags):
+		"""
+		Parse tags from command line arguments.
+		:param tags: List of tag args in 'key:value' format.
+		:return: Tags in dictionary format
+		"""
+		return {key_value[0]: key_value[1] for key_value in
+				(tag.split(':') for tag in (tags or []))
+				if len(key_value) == 2 and len(key_value[0]) > 0 and len(key_value[1]) > 0}
 
 	def is_proper(self, volume):
 		try:

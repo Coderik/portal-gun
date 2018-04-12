@@ -1,6 +1,7 @@
 import boto3
 from botocore.exceptions import EndpointConnectionError
 
+from portal_gun.aws.helpers import to_aws_tags
 from portal_gun.aws.exceptions import AwsRequestError
 
 
@@ -129,7 +130,7 @@ class AwsClient(object):
 			snapshot_id = ''
 
 		# Convert tags to the expected format
-		aws_tags = self._to_aws_tags(tags)
+		aws_tags = to_aws_tags(tags)
 
 		# Make request
 		try:
@@ -165,7 +166,7 @@ class AwsClient(object):
 		:return:
 		"""
 		# Convert tags to the expected format
-		aws_tags = self._to_aws_tags(tags)
+		aws_tags = to_aws_tags(tags)
 
 		try:
 			response = self.ec2_client().create_tags(Resources=[resource_id], Tags=aws_tags)
@@ -219,12 +220,3 @@ class AwsClient(object):
 		status_code = response['ResponseMetadata']['HTTPStatusCode']
 		if status_code != 200:
 			raise AwsRequestError('Request to AWS failed with status code {}.'.format(status_code))
-
-	def _to_aws_tags(self, tags):
-		"""
-		Convert tags from dictionary to a format expected by AWS:
-		[{'Key': key, 'Value': value}]
-		:param tags
-		:return:
-		"""
-		return [{'Key': k, 'Value': v} for k, v in tags.iteritems()]
