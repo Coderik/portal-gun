@@ -6,6 +6,24 @@ from portal_gun.aws.helpers import to_aws_tags
 from portal_gun.aws.exceptions import AwsRequestError
 
 
+def api_caller():
+	from functools import wraps
+
+	def api_caller_decorator(func):
+		@wraps(func)
+		def wrapper(*args, **kwargs):
+			try:
+				return func(*args, **kwargs)
+			except EndpointConnectionError as e:
+				raise AwsRequestError('Could not make request to AWS.')
+			except ClientError as e:
+				raise AwsRequestError(e.message)
+
+		return wrapper
+
+	return api_caller_decorator
+
+
 class AwsClient(object):
 	def __init__(self, access_key, secret_key, region):
 		self._access_key = access_key
@@ -14,21 +32,19 @@ class AwsClient(object):
 		self._ec2_client = None
 		self._sts_client = None
 
+	@api_caller()
 	def get_user_identity(self):
-		try:
-			response = self.sts_client().get_caller_identity()
-		except EndpointConnectionError as e:
-			raise AwsRequestError('Could not make request to AWS.')
+		# Call API
+		response = self.sts_client().get_caller_identity()
 
 		self._check_status_code(response)
 
 		return response
 
+	@api_caller()
 	def get_availability_zones(self):
-		try:
-			response = self.ec2_client().describe_availability_zones()
-		except EndpointConnectionError as e:
-			raise AwsRequestError('Could not make request to AWS.')
+		# Call API
+		response = self.ec2_client().describe_availability_zones()
 
 		self._check_status_code(response)
 
@@ -39,16 +55,15 @@ class AwsClient(object):
 
 		return zones
 
+	@api_caller()
 	def find_spot_instance(self, portal_name, user):
 		# Define filters
 		filters = [{'Name': 'tag:portal-name', 'Values': [portal_name]},
 				   {'Name': 'tag:created-by', 'Values': [user]},
 				   {'Name': 'instance-state-name', 'Values': ['running', 'pending']}]
 
-		try:
-			response = self.ec2_client().describe_instances(Filters=filters)
-		except EndpointConnectionError as e:
-			raise AwsRequestError('Could not make request to AWS.')
+		# Call API
+		response = self.ec2_client().describe_instances(Filters=filters)
 
 		self._check_status_code(response)
 
@@ -57,11 +72,10 @@ class AwsClient(object):
 
 		return response['Reservations'][0]['Instances'][0]
 
+	@api_caller()
 	def get_instance(self, instance_id):
-		try:
-			response = self.ec2_client().describe_instances(InstanceIds=[instance_id])
-		except EndpointConnectionError as e:
-			raise AwsRequestError('Could not make request to AWS.')
+		# Call API
+		response = self.ec2_client().describe_instances(InstanceIds=[instance_id])
 
 		self._check_status_code(response)
 
@@ -70,21 +84,19 @@ class AwsClient(object):
 
 		return response['Reservations'][0]['Instances'][0]
 
+	@api_caller()
 	def get_spot_fleet_instances(self, spot_fleet_request_id):
-		try:
-			response = self.ec2_client().describe_spot_fleet_instances(SpotFleetRequestId=spot_fleet_request_id)
-		except EndpointConnectionError as e:
-			raise AwsRequestError('Could not make request to AWS.')
+		# Call API
+		response = self.ec2_client().describe_spot_fleet_instances(SpotFleetRequestId=spot_fleet_request_id)
 
 		self._check_status_code(response)
 
 		return response['ActiveInstances']
 
+	@api_caller()
 	def get_spot_fleet_request(self, spot_fleet_request_id):
-		try:
-			response = self.ec2_client().describe_spot_fleet_requests(SpotFleetRequestIds=[spot_fleet_request_id])
-		except EndpointConnectionError as e:
-			raise AwsRequestError('Could not make request to AWS.')
+		# Call API
+		response = self.ec2_client().describe_spot_fleet_requests(SpotFleetRequestIds=[spot_fleet_request_id])
 
 		self._check_status_code(response)
 
@@ -93,21 +105,21 @@ class AwsClient(object):
 
 		return response['SpotFleetRequestConfigs'][0]
 
+	@api_caller()
 	def get_volumes_by_id(self, volume_ids):
 		"""
 		:param volume_ids: One or several volume Ids
 		:type volume_ids: string or list
 		:return:
 		"""
-		try:
-			response = self.ec2_client().describe_volumes(VolumeIds=AwsClient._as_list(volume_ids))
-		except EndpointConnectionError as e:
-			raise AwsRequestError('Could not make request to AWS.')
+		# Call API
+		response = self.ec2_client().describe_volumes(VolumeIds=AwsClient._as_list(volume_ids))
 
 		self._check_status_code(response)
 
 		return response['Volumes']
 
+	@api_caller()
 	def get_volumes(self, filters=None):
 		if filters is None:
 			filters = {}
@@ -115,16 +127,14 @@ class AwsClient(object):
 		# Convert list of filters to the expected format
 		aws_filters = [{'Name': k, 'Values': AwsClient._as_list(v)} for k, v in filters.iteritems()]
 
-		# Make request
-		try:
-			response = self.ec2_client().describe_volumes(Filters=aws_filters)
-		except EndpointConnectionError as e:
-			raise AwsRequestError('Could not make request to AWS.')
+		# Call API
+		response = self.ec2_client().describe_volumes(Filters=aws_filters)
 
 		self._check_status_code(response)
 
 		return response['Volumes']
 
+	@api_caller()
 	def create_volume(self, size, availability_zone, tags=None, snapshot_id=None):
 		if tags is None:
 			tags = {}
@@ -134,57 +144,48 @@ class AwsClient(object):
 		# Convert tags to the expected format
 		aws_tags = to_aws_tags(tags)
 
-		# Make request
-		try:
-			response = self.ec2_client().create_volume(AvailabilityZone=availability_zone,
-													   Size=size,
-													   VolumeType='gp2',
-													   SnapshotId=snapshot_id,
-													   TagSpecifications=[{'ResourceType': 'volume', 'Tags': aws_tags}])
-		except EndpointConnectionError as e:
-			raise AwsRequestError('Could not make request to AWS.')
+		# Call API
+		response = self.ec2_client().create_volume(AvailabilityZone=availability_zone,
+												   Size=size,
+												   VolumeType='gp2',
+												   SnapshotId=snapshot_id,
+												   TagSpecifications=[{'ResourceType': 'volume', 'Tags': aws_tags}])
 
 		self._check_status_code(response)
 
 		return response['VolumeId']
 
+	@api_caller()
 	def update_volume(self, volume_id, size):
-		try:
-			response = self.ec2_client().modify_volume(VolumeId=volume_id,
-													   Size=size)
-		except EndpointConnectionError as e:
-			raise AwsRequestError('Could not make request to AWS.')
-		except ClientError as e:
-			raise AwsRequestError(e.message)
+		# Call API
+		response = self.ec2_client().modify_volume(VolumeId=volume_id,
+												   Size=size)
 
 		self._check_status_code(response)
 
 		return response
 
+	@api_caller()
 	def attach_volume(self, instance_id, volume_id, device):
-		try:
-			response = self.ec2_client().attach_volume(InstanceId=instance_id,
-													   VolumeId=volume_id,
-													   Device=device)
-		except EndpointConnectionError as e:
-			raise AwsRequestError('Could not make request to AWS.')
+		# Call API
+		response = self.ec2_client().attach_volume(InstanceId=instance_id,
+												   VolumeId=volume_id,
+												   Device=device)
 
 		self._check_status_code(response)
 
 		return response
 
+	@api_caller()
 	def delete_volume(self, volume_id):
-		try:
-			response = self.ec2_client().delete_volume(VolumeId=volume_id)
-		except EndpointConnectionError as e:
-			raise AwsRequestError('Could not make request to AWS.')
-		except ClientError as e:
-			raise AwsRequestError(e.message)
+		# Call API
+		response = self.ec2_client().delete_volume(VolumeId=volume_id)
 
 		self._check_status_code(response)
 
 		return response
 
+	@api_caller()
 	def add_tags(self, resource_id, tags):
 		"""
 		Add or overwrite tags for an EC2 resource (e.g. an instance or a volume).
@@ -195,31 +196,27 @@ class AwsClient(object):
 		# Convert tags to the expected format
 		aws_tags = to_aws_tags(tags)
 
-		try:
-			response = self.ec2_client().create_tags(Resources=[resource_id], Tags=aws_tags)
-		except EndpointConnectionError as e:
-			raise AwsRequestError('Could not make request to AWS.')
+		# Call API
+		response = self.ec2_client().create_tags(Resources=[resource_id], Tags=aws_tags)
 
 		self._check_status_code(response)
 
 		return True
 
+	@api_caller()
 	def request_spot_fleet(self, config):
-		try:
-			response = self.ec2_client().request_spot_fleet(SpotFleetRequestConfig=config)
-		except EndpointConnectionError as e:
-			raise AwsRequestError('Could not make request to AWS.')
+		# Call API
+		response = self.ec2_client().request_spot_fleet(SpotFleetRequestConfig=config)
 
 		self._check_status_code(response)
 
 		return response
 
+	@api_caller()
 	def cancel_spot_fleet_request(self, spot_fleet_request_id):
-		try:
-			response = self.ec2_client().cancel_spot_fleet_requests(SpotFleetRequestIds=[spot_fleet_request_id],
-																	TerminateInstances=True)
-		except EndpointConnectionError as e:
-			raise AwsRequestError('Could not make request to AWS.')
+		# Call API
+		response = self.ec2_client().cancel_spot_fleet_requests(SpotFleetRequestIds=[spot_fleet_request_id],
+																TerminateInstances=True)
 
 		self._check_status_code(response)
 
