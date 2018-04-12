@@ -127,13 +127,15 @@ class VolumeCommand(BaseCommand):
 			try:
 				size = int(size)
 			except ValueError as e:
-				exit('Size has to be an integer.')
+				raise CommandError('Size has to be an integer.')
 
 		# Check size parameter
 		if size < self._min_size:
-			exit('Specified size {}Gb is smaller than the lower limit of {}Gb.'.format(size, self._min_size))
+			raise CommandError('Specified size {}Gb is smaller than the lower limit of {}Gb.'
+							   .format(size, self._min_size))
 		elif size > self._max_size:
-			exit('Specified size {}Gb is bigger than the upper limit of {}Gb.'.format(size, self._max_size))
+			raise CommandError('Specified size {}Gb is bigger than the upper limit of {}Gb.'
+							   .format(size, self._max_size))
 
 		# Ask for availability zone, if not provided
 		if availability_zone is None:
@@ -142,8 +144,8 @@ class VolumeCommand(BaseCommand):
 
 		# Check availability zone
 		if availability_zone not in availability_zones:
-			exit('Unexpected availability zone "{}". Available zones are: {}.'
-				 .format(availability_zone, ', '.join(availability_zones)))
+			raise CommandError('Unexpected availability zone "{}". Available zones are: {}.'
+							   .format(availability_zone, ', '.join(availability_zones)))
 
 		# Set tags
 		tags = {'Name': name, 'created-by': user['Arn'], self._proper_tag_key: self._proper_tag_value}

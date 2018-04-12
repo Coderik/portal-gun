@@ -118,7 +118,7 @@ class OpenPortalCommand(BaseCommand):
 
 				# Check status code
 				if response['State'] not in ['attaching', 'attached']:
-					exit('Could not attach persistent volume `{}`'.format(volume_spec['volume_id']))
+					raise CommandError('Could not attach persistent volume `{}`'.format(volume_spec['volume_id']))
 
 			# Wait for persistent volumes to be attached
 			print('Waiting for the persistent volumes to be attached...')
