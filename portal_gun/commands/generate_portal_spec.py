@@ -1,8 +1,7 @@
-import json
 from os import path
 
 from portal_gun.commands.base_command import BaseCommand
-from portal_gun.configuration.generation import generate_portal_spec
+from portal_gun.configuration.schemas import PortalSchema
 
 
 class GeneratePortalSpecCommand(BaseCommand):
@@ -23,20 +22,19 @@ class GeneratePortalSpecCommand(BaseCommand):
 		portal_name = self._args.portal.rsplit('.', 1)[0]
 
 		# Confirm portal name to user
-		print('\tWill create draft specification for `{}` portal.'.format(portal_name))
+		print('Creating draft specification for `{}` portal.'.format(portal_name))
 
 		# Ensure file with this name does not exist
 		file_name = '{}.json'.format(portal_name)
 		if path.exists(file_name):
-			print('\tFile `{}` already exists. Remove the file or pick different name for the portal.'.format(file_name))
+			print('File `{}` already exists. Remove the file or pick different name for the portal.'.format(file_name))
 			return
 
 		# Generate spec and pretty print it to JSON
-		spec = generate_portal_spec()
-		spec_str = json.dumps(spec, indent=4, sort_keys=True)
+		spec_str = PortalSchema().dumps(None, indent=4)
 
 		# Write spec to file
 		with open(file_name, 'w') as f:
 			f.write(spec_str)
 
-		print('\tDraft of portal specification has been written to `{}`.'.format(file_name))
+		print('Draft of portal specification has been written to `{}`.'.format(file_name))
