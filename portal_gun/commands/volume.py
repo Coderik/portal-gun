@@ -3,11 +3,11 @@ from __future__ import print_function
 from portal_gun.aws.aws_client import AwsClient
 from portal_gun.aws.helpers import from_aws_tags
 from portal_gun.commands.base_command import BaseCommand
-from portal_gun.commands.helpers import get_config
 from portal_gun.commands.exceptions import CommandError
-from portal_gun.helpers.pretty_print import print_volume
-from portal_gun.context_managers.step import step
+from portal_gun.configuration.helpers import get_config
 from portal_gun.context_managers.print_scope import print_scope
+from portal_gun.context_managers.step import step
+from portal_gun.helpers.pretty_print import print_volume
 
 
 class VolumeCommand(BaseCommand):
@@ -16,7 +16,7 @@ class VolumeCommand(BaseCommand):
 
 		self._proper_tag_key = 'dimension'
 		self._proper_tag_value = 'C-137'
-		self._service_tags = [self._proper_tag_key, 'created-by']
+		self._service_tags = [self._proper_tag_key, 'created-by', 'mount-point']
 		self._default_size = 50  # Gb
 		self._min_size = 1  # Gb
 		self._max_size = 16384  # Gb
@@ -66,8 +66,6 @@ class VolumeCommand(BaseCommand):
 		parser_delete.set_defaults(actor=cls.delete_volume)
 
 	def run(self):
-		print('Running `{}` command.'.format(self.cmd()))
-
 		# Find, parse and validate configs
 		with print_scope('Checking configuration:', 'Done.\n'):
 			config = get_config(self._args)
@@ -129,13 +127,15 @@ class VolumeCommand(BaseCommand):
 			try:
 				size = int(size)
 			except ValueError as e:
-				exit('Size has to be an integer.')
+				raise CommandError('Size has to be an integer.')
 
 		# Check size parameter
 		if size < self._min_size:
-			exit('Specified size {}Gb is smaller than the lower limit of {}Gb.'.format(size, self._min_size))
+			raise CommandError('Specified size {}Gb is smaller than the lower limit of {}Gb.'
+							   .format(size, self._min_size))
 		elif size > self._max_size:
-			exit('Specified size {}Gb is bigger than the upper limit of {}Gb.'.format(size, self._max_size))
+			raise CommandError('Specified size {}Gb is bigger than the upper limit of {}Gb.'
+							   .format(size, self._max_size))
 
 		# Ask for availability zone, if not provided
 		if availability_zone is None:
@@ -144,8 +144,8 @@ class VolumeCommand(BaseCommand):
 
 		# Check availability zone
 		if availability_zone not in availability_zones:
-			exit('Unexpected availability zone "{}". Available zones are: {}.'
-				 .format(availability_zone, ', '.join(availability_zones)))
+			raise CommandError('Unexpected availability zone "{}". Available zones are: {}.'
+							   .format(availability_zone, ', '.join(availability_zones)))
 
 		# Set tags
 		tags = {'Name': name, 'created-by': user['Arn'], self._proper_tag_key: self._proper_tag_value}

@@ -2,7 +2,8 @@ import os
 
 from portal_gun.aws.aws_client import AwsClient
 from portal_gun.commands.base_command import BaseCommand
-from portal_gun.commands.helpers import get_config, get_portal_spec
+from portal_gun.commands.exceptions import CommandError
+from portal_gun.configuration.helpers import get_config, get_portal_spec
 from portal_gun.context_managers.no_print import no_print
 
 
@@ -40,7 +41,7 @@ class SshCommand(BaseCommand):
 		instance_info = aws.find_spot_instance(portal_name, aws_user['Arn'])
 
 		if instance_info is None:
-			exit('Portal `{}` does not seem to be opened'.format(portal_name))
+			raise CommandError('Portal `{}` does not seem to be opened'.format(portal_name))
 
 		# Get values for ssh
 		key_file = portal_spec['spot_instance']['ssh_key_file']

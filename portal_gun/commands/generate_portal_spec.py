@@ -19,8 +19,6 @@ class GeneratePortalSpecCommand(BaseCommand):
 		parser.add_argument('portal', help='Name of portal')
 
 	def run(self):
-		print('Running `{}` command.'.format(self.cmd()))
-
 		# Get portal name
 		portal_name = self._args.portal.rsplit('.', 1)[0]
 

@@ -7,9 +7,9 @@ from fabric.tasks import execute
 from portal_gun.aws.aws_client import AwsClient
 from portal_gun.commands import common
 from portal_gun.commands.base_command import BaseCommand
-from portal_gun.commands.helpers import get_config, get_portal_spec
-from portal_gun.context_managers.step import step
+from portal_gun.configuration.helpers import get_config, get_portal_spec
 from portal_gun.context_managers.print_scope import print_scope
+from portal_gun.context_managers.step import step
 
 
 def sync_files(local_path, remote_path, is_upload, is_recursive):
@@ -50,8 +50,6 @@ class OpenChannelCommand(BaseCommand):
 		parser.add_argument('portal', help='Name of portal')
 
 	def run(self):
-		print('Running `{}` command.'.format(self.cmd()))
-
 		# Find, parse and validate configs
 		with print_scope('Checking configuration:', 'Done.\n'):
 			config = get_config(self._args)

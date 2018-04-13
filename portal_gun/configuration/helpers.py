@@ -1,9 +1,9 @@
-from os import path
 import json
+from os import path
 
-from portal_gun.context_managers.step import step
-from portal_gun.configuration.validation import validate_portal_spec, validate_config
 from portal_gun.configuration.exceptions import ConfigValidationError
+from portal_gun.configuration.validation import validate_portal_spec, validate_config
+from portal_gun.context_managers.step import step
 
 
 def get_config(args):

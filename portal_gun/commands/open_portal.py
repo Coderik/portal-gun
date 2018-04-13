@@ -12,10 +12,10 @@ import portal_gun.aws.helpers as aws_helpers
 from portal_gun.aws.aws_client import AwsClient
 from portal_gun.commands import common
 from portal_gun.commands.base_command import BaseCommand
-from portal_gun.commands.helpers import get_config, get_portal_spec
 from portal_gun.commands.exceptions import CommandError
-from portal_gun.context_managers.step import step
+from portal_gun.configuration.helpers import get_config, get_portal_spec
 from portal_gun.context_managers.print_scope import print_scope
+from portal_gun.context_managers.step import step
 
 
 class OpenPortalCommand(BaseCommand):
@@ -34,8 +34,6 @@ class OpenPortalCommand(BaseCommand):
 
 	# TODO: add verbose mode that prints all configs and dry-run mode to check the configs and permissions
 	def run(self):
-		print('Running `{}` command.\n'.format(self.cmd()))
-
 		# Find, parse and validate configs
 		with print_scope('Checking configuration:', 'Done.\n'):
 			config = get_config(self._args)
@@ -120,7 +118,7 @@ class OpenPortalCommand(BaseCommand):
 
 				# Check status code
 				if response['State'] not in ['attaching', 'attached']:
-					exit('Could not attach persistent volume `{}`'.format(volume_spec['volume_id']))
+					raise CommandError('Could not attach persistent volume `{}`'.format(volume_spec['volume_id']))
 
 			# Wait for persistent volumes to be attached
 			print('Waiting for the persistent volumes to be attached...')
@@ -157,8 +155,13 @@ class OpenPortalCommand(BaseCommand):
 			for i in range(len(portal_spec['persistent_volumes'])):
 				with step('Mount volume #{}'.format(i), error_message='Could not mount volume', catch=[RuntimeError]):
 					volume_spec = portal_spec['persistent_volumes'][i]
+
+					# Mount volume
 					with hide('running', 'stdout'):
 						execute(self.mount_volume, volume_spec['device'], volume_spec['mount_point'])
+
+					# Store extra information in volume's tags
+					aws.add_tags(volume_spec['volume_id'], {'mount-point': volume_spec['mount_point']})
 
 			# TODO: consider importing and executing custom fab tasks instead
 			# Install extra python packages, if needed
