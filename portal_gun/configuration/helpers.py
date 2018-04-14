@@ -1,8 +1,10 @@
 import json
 from os import path
+from collections import OrderedDict
 
-from portal_gun.configuration.exceptions import ConfigValidationError
-from portal_gun.configuration.validation import validate_portal_spec, validate_config
+from marshmallow import fields
+
+from portal_gun.configuration.schemas import ConfigSchema, PortalSchema, ValidationError
 from portal_gun.context_managers.step import step
 
 
@@ -10,11 +12,11 @@ def get_config(args):
 	# Parse global config
 	with step('Parse config file', catch=[IOError, ValueError]):
 		with open(args.config) as config_file:
-			config = json.load(config_file)
+			config_data = json.load(config_file)
 
 	# Validate global config
-	with step('Validate config', catch=[ConfigValidationError]):
-		validate_config(config)
+	with step('Validate config', catch=[ValidationError]):
+		config = ConfigSchema().load(config_data)
 
 	return config
 
@@ -32,10 +34,39 @@ def get_portal_spec(args):
 	# Parse portal spec file
 	with step('Parse portal specification file', catch=[IOError, ValueError]):
 		with open(spec_filename) as spec_file:
-			portal_spec = json.load(spec_file)
+			portal_spec_data = json.load(spec_file)
 
 	# Validate portal spec
-	with step('Validate portal specification', catch=[ConfigValidationError]):
-		validate_portal_spec(portal_spec)
+	with step('Validate portal specification', catch=[ValidationError]):
+		portal_spec = PortalSchema().load(portal_spec_data)
 
 	return portal_spec, portal_name
+
+
+def generate_draft(schema):
+	"""
+	Generate draft config from a given schema.
+	:param schema:
+	:return:
+	"""
+	draft = OrderedDict()
+
+	for field_name, field in schema.fields.items():
+		if field.__class__ is fields.Nested:
+			field_value = generate_draft(field.schema)
+			if field.schema.many:
+				field_value = [field_value]
+		elif field.__class__ is fields.List:
+			field_value = [_describe_field(field.container)]
+		else:
+			field_value = _describe_field(field)
+
+		draft[field_name] = field_value
+
+	return draft
+
+
+def _describe_field(field):
+	description = field.__class__.__name__.lower()
+	requirement = 'required' if field.required else 'optional'
+	return '{} ({})'.format(description, requirement)

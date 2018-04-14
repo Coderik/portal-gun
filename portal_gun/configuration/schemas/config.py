@@ -1,8 +1,10 @@
-from portal_gun.configuration.fields import *
+from marshmallow import fields, Schema
 
-schema = {
-	'aws_region': rsf(),
-	'aws_access_key': rsf(),
-	'aws_secret_key': rsf()
-}
 
+class ConfigSchema(Schema):
+	aws_region = fields.String(required=True, default='string')
+	aws_access_key = fields.String(required=True, default='string')
+	aws_secret_key = fields.String(required=True, default='string')
+
+	class Meta:
+		ordered = True
