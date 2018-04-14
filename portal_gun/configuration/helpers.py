@@ -1,5 +1,8 @@
 import json
 from os import path
+from collections import OrderedDict
+
+from marshmallow import fields
 
 from portal_gun.configuration.schemas import ConfigSchema, PortalSchema, ValidationError
 from portal_gun.context_managers.step import step
@@ -38,3 +41,32 @@ def get_portal_spec(args):
 		portal_spec = PortalSchema().load(portal_spec_data)
 
 	return portal_spec, portal_name
+
+
+def generate_draft(schema):
+	"""
+	Generate draft config from a given schema.
+	:param schema:
+	:return:
+	"""
+	draft = OrderedDict()
+
+	for field_name, field in schema.fields.items():
+		if field.__class__ is fields.Nested:
+			field_value = generate_draft(field.schema)
+			if field.schema.many:
+				field_value = [field_value]
+		elif field.__class__ is fields.List:
+			field_value = [_describe_field(field.container)]
+		else:
+			field_value = _describe_field(field)
+
+		draft[field_name] = field_value
+
+	return draft
+
+
+def _describe_field(field):
+	description = field.__class__.__name__.lower()
+	requirement = 'required' if field.required else 'optional'
+	return '{} ({})'.format(description, requirement)

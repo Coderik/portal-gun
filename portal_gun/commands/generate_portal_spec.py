@@ -1,7 +1,9 @@
 from os import path
+import json
 
 from portal_gun.commands.base_command import BaseCommand
 from portal_gun.configuration.schemas import PortalSchema
+from portal_gun.configuration.helpers import generate_draft
 
 
 class GeneratePortalSpecCommand(BaseCommand):
@@ -30,10 +32,10 @@ class GeneratePortalSpecCommand(BaseCommand):
 			print('File `{}` already exists. Remove the file or pick different name for the portal.'.format(file_name))
 			return
 
-		# Generate spec and pretty print it to JSON
-		spec_str = PortalSchema().dumps(None, indent=4)
+		# Generate draft of a portal spec and pretty print it to JSON
+		spec_str = json.dumps(generate_draft(PortalSchema()), indent=4)
 
-		# Write spec to file
+		# Write portal spec to file
 		with open(file_name, 'w') as f:
 			f.write(spec_str)
 
