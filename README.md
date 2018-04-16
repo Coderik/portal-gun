@@ -15,4 +15,4 @@ TODO
 License
 -------
 
-TODO
+MIT licensed. See the bundled [LICENSE](https://github.com/Coderik/portal-gun/blob/publicity/LICENSE) file for details.
