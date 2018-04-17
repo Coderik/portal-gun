@@ -11,22 +11,24 @@
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+
+import os
+import sys
+sys.path.insert(0, os.path.abspath('..'))
+
+import portal_gun
 
 
 # -- Project information -----------------------------------------------------
 
 project = 'Portal Gun'
-copyright = '2018, Vadim Fedorov'
-author = 'Vadim Fedorov'
+author = portal_gun.__author__
+copyright = '2018, {}'.format(author)
 
 # The short X.Y version
-version = ''
+version = portal_gun.__version__
 # The full version, including alpha/beta/rc tags
-release = ''
+release = portal_gun.__version__
 
 
 # -- General configuration ---------------------------------------------------
@@ -79,11 +81,18 @@ pygments_style = 'sphinx'
 #
 html_theme = 'alabaster'
 
+html_show_sourcelink = False
+
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
+html_theme_options = {
+    'github_user': 'Coderik',
+    'github_repo': 'portal-gun',
+    'github_banner': True,
+    'github_type': 'star'
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
