@@ -1,4 +1,7 @@
 .idea/
 env/
+dist/
+build/
+*.egg-info/
 *.json
 *.pyc
