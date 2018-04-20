@@ -7,7 +7,7 @@ Configuration
 Application Config
 ==================
 
-Portal Gun reads basic configuration from a file in JSON format. By default it looks for a file named ``config.json`` in the current folder. Another location might be specified using ``-c, --config`` argument.
+Portal Gun reads basic configuration from a file in JSON format. By default it looks for a file named ``config.json`` in the current folder. Another location may be specified using ``-c, --config`` argument.
 
 Values to set in the configuration file:
 
@@ -64,7 +64,7 @@ Portal Gun requires the following access rights::
 `IAM Policy <https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html>`_ is the most convenient way to grant required permissions.
 Create a new policy and attach it to a user which will be used for programmatic access via Portal Gun.
 
-Reference policy granting required permissions can be found `here <reference_policy.json>`_. You can make it more strict, for instance, by limiting access right to a particular region.
+Reference policy granting required permissions can be found `here <_static/reference_policy.json>`_. You can make it more strict, for instance, by limiting access right to a particular region.
 
 Additional Resources
 ====================

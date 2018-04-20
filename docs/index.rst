@@ -14,7 +14,7 @@ Portal Gun
 
 	*Deep Learning on Amazon EC2 Spot Instances without the agonizing pain.*
 
-.. Release v\ |version|.
+Release v\ |version|.
 
 **Portal Gun** is a command line tool that automates repetitive tasks associated with the management of Spot Instances on Amazon EC2 service.
 
