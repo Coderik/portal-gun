@@ -4,6 +4,8 @@
 Portals
 =======
 
+.. _portal-spec:
+
 Specification
 =============
 
