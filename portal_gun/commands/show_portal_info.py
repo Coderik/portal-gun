@@ -39,7 +39,8 @@ class ShowPortalInfoCommand(BaseCommand):
 
 		with no_print():
 			# Find, parse and validate configs
-			config, portal_spec, portal_name = get_portal_spec(self._args)
+			config = get_config(self._args)
+			portal_spec, portal_name = get_portal_spec(self._args)
 
 			if field == 'name':
 				return portal_name
