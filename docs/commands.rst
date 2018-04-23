@@ -4,16 +4,26 @@
 Commands
 ========
 
+Print top-level help message::
+
+    $ portal -h
+
+Add ``-h`` (or ``--help``) flag after commands and command groups to print corresponding help messages. For instance, print help message for the ``volume`` group including the list of commands::
+
+    $ portal volume -h
+
+**Top-level command options:**
+
+.. cmdoption:: -c CONFIG, --config CONFIG
+
+    Set name and location of configuration file.
+
 .. _volume_cmd:
 
 Persistent Volumes
 ==================
 
 This section documents a group of commands that are used to manage persistent volumes. For information on how to configure attachment of persistent volumes to instances see :ref:`Portal Specification <portal_spec>` section.
-
-To print help message for the group ``volume`` including the list of commands::
-
-    $ portal volume -h
 
 Create
 ------
@@ -99,10 +109,14 @@ By default ``delete`` command deletes only the volumes created by Portal Gun on 
 
     Delete any volume, even not owned.
 
+----
+
 .. _portal_cmd:
 
 Portals
 =======
+
+*Portal* is the main concept of the Portal Gun (see :ref:`Concepts <concepts>` for details). 
 
 Init
 ----
@@ -173,10 +187,22 @@ To close a portal means to cancel a Spot Instance request and terminate the inst
 
     $ portal close <Portal-Name>
 
+----
+
 .. _channel_cmd:
 
 Channels
 ========
 
+Channels are used to sync remote and local folders. A channel has direction, source and target folders, and other properties. Every channel belongs to a portal and should be configured in the corresponding portal specification file (see :ref:`Portal Specification <portal_spec>` for details). 
+
 Channel
 -------
+
+Start syncing specified folders::
+
+    $ portal channel <Portal-Name>
+
+Synchronization of files over the channels is done continuously using ``rsync``. Data transfer happens every time a new file appears or an existing file is changed in the source folder.
+
+To stop synchronization press ``^C``.

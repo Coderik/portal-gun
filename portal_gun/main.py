@@ -15,7 +15,8 @@ def main():
 	# Add sub argparsers for commands
 	fill_subparsers(subparsers)
 
-	parser.add_argument('-c', '--config', default='config.json', dest='config', help='Configuration file')
+	parser.add_argument('-c', '--config', default='config.json', dest='config',
+						help='Set name and location of configuration file')
 	args = parser.parse_args()
 
 	command = create_command(args.command, args)

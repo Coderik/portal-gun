@@ -8,6 +8,8 @@ Overview
 
 Notice, though, that Portal Gun is not a generic tool. If you need full control over AWS resources from command line, use the `AWS CLI <https://aws.amazon.com/cli/>`_ instead.
 
+.. _concepts:
+
 Concepts
 ========
 
