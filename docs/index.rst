@@ -29,9 +29,8 @@ User Guide
     overview
     install
     config
-    volumes
-    portals
-    channels
+    portal_spec
+    commands
 
 
 
