@@ -118,6 +118,8 @@ Portals
 
 *Portal* is the main concept of the Portal Gun (see :ref:`Concepts <concepts>` for details). 
 
+.. _portal_cmd_init:
+
 Init
 ----
 

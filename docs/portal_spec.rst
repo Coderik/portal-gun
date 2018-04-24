@@ -4,6 +4,8 @@
 Portal Specification
 ====================
 
+Draft portal specification file can be created using :ref:`init <portal_cmd_init>` command.
+
 Schema
 ======
 
@@ -114,27 +116,35 @@ spot_fleet . **iam_fleet_role**
 
 	*Type: array of objects. Required.*
 
-	Specifications of volumes to be attached.
+	Specifications of EBS volumes to be attached. Use :ref:`volume <volume_cmd>` group of commands to manage and list volumes.
 
 persistent_volumes[] . **volume_id**
 """"""""""""""""""""""""""""""""""""
 
 	*Type: string. Required.*
 
+	Id of EBS volume to be attached to the instance.
+
 persistent_volumes[] . **device**
 """""""""""""""""""""""""""""""""
 
 	*Type: string. Required.*
+
+	Name of device to represent the attached volume. For example, ``/dev/xvdf``. See `documentation <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/block-device-mapping-concepts.html?icmpid=docs_ec2_console>`_ for details.
 
 persistent_volumes[] . **mount_point**
 """"""""""""""""""""""""""""""""""""""
 
 	*Type: string. Required.*
 
+	Mounting point within the instance file system, where device representing the volume should be mounted. For example, ``/home/ubuntu/workspace`` (assuming that AMI username is *ubuntu*).
+
 **channels**
 ^^^^^^^^^^^^
 
 	*Type: array of objects. Required.*
+
+	Specifications of file synchronization channels.
 
 
 channels[] . **direction**
@@ -142,25 +152,35 @@ channels[] . **direction**
 
 	*Type: string. Required.*
 
+	Direction of file transfer. Expected values are "*in*" and "*out*". Inbound channel transfers files from the remote instance to the local machine. Outbound channel transfers files from the local machine to the remote instance. 
+
 channels[] . **local_path**
 """""""""""""""""""""""""""
 
 	*Type: string. Required.*
+
+	Local path to be used in synchronization. Note that synchronization is done via ``rsync``, therefore, similar rules regarding the trailing slash (/) in the source path are applied (see :ref:`excerpt <rsync_help>` of rsync help for details).
 
 channels[] . **remote_path**
 """"""""""""""""""""""""""""
 
 	*Type: string. Required.*
 
+	Remote path to be used in synchronization. Note that synchronization is done via ``rsync``, therefore, similar rules regarding the trailing slash (/) in the source path are applied (see :ref:`excerpt <rsync_help>` of rsync help for details).
+
 channels[] . **recursive**
 """"""""""""""""""""""""""
 
 	*Type: boolean. Optional.*
 
+	Enable/disable recursive synchronization. Disabled by default.
+
 channels[] . **delay**
 """"""""""""""""""""""
 
 	*Type: float. Optional.*
+
+	Delay between two consecutive synchronization attempts. Defaults to 1 second.
 
 ----
 
@@ -173,3 +193,23 @@ Deep Learning AMIs
 ^^^^^^^^^^^^^^^^^^
 
 **TODO: add details on where to find ids**
+
+.. _rsync_help:
+
+Rsync Help on Trailing Slash
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+*An excerpt of* ``man rsync``:
+
+Recursively transfer all files from the directory src/bar on the machine foo into the /data/tmp/bar directory on the local machine::
+
+	$ rsync foo:src/bar /data/tmp
+
+A trailing slash on the source changes this behavior to avoid creating an additional directory level at the destination::
+
+	$ rsync foo:src/bar/ /data/tmp
+
+You can think of a trailing / on a source as meaning "copy the contents of this directory" as opposed to "copy the directory by name", but in both cases the attributes of the containing directory are transferred to the containing directory on the  destination. In other words, each of the following commands copies the files in the same way, including their setting of the attributes of /dest/foo::
+
+	$ rsync /src/foo /dest
+	$ rsync /src/foo/ /dest/foo
