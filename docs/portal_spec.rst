@@ -4,7 +4,46 @@
 Portal Specification
 ====================
 
-Draft portal specification file can be created using :ref:`init <portal_cmd_init>` command.
+.. code-block:: json
+
+	{
+		"spot_instance": {
+			"instance_type": "string (required)", 
+			"image_id": "string (required)", 
+			"key_pair_name": "string (required)", 
+			"identity_file": "string (required)", 
+			"security_group_id": "string (required)", 
+			"availability_zone": "string (required)", 
+			"subnet_id": "string (optional)", 
+			"ebs_optimized": "boolean (optional)", 
+			"remote_user": "string (required)", 
+			"python_virtual_env": "string (optional)", 
+			"extra_python_packages": [
+				"string (optional)"
+			]
+		}, 
+		"spot_fleet": {
+			"iam_fleet_role": "string (required)"
+		}, 
+		"persistent_volumes": [
+			{
+				"volume_id": "string (required)", 
+				"device": "string (required)", 
+				"mount_point": "string (required)"
+			}
+		], 
+		"channels": [
+			{
+				"direction": "string (required)", 
+				"local_path": "string (required)", 
+				"remote_path": "string (required)", 
+				"recursive": "boolean (optional)", 
+				"delay": "float (optional)"
+			}
+		]
+	}
+
+Draft portal specification as the one above can be created using :ref:`init <portal_cmd_init>` command.
 
 Schema
 ======
