@@ -47,7 +47,7 @@ class ShowPortalInfoCommand(BaseCommand):
 			if field == 'user':
 				return portal_spec['spot_instance']['remote_user']
 			if field == 'key':
-				return portal_spec['spot_instance']['ssh_key_file']
+				return portal_spec['spot_instance']['identity_file']
 
 			# Create AWS client
 			aws = AwsClient(config['aws_access_key'], config['aws_secret_key'], config['aws_region'])
@@ -127,7 +127,7 @@ class ShowPortalInfoCommand(BaseCommand):
 
 			# Print ssh command
 			with print_scope('Use the following command to connect to the remote machine:'):
-				print('ssh -i "{}" {}@{}'.format(portal_spec['spot_instance']['ssh_key_file'],
+				print('ssh -i "{}" {}@{}'.format(portal_spec['spot_instance']['identity_file'],
 												 portal_spec['spot_instance']['remote_user'],
 												 instance_info['PublicDnsName']))
 		else:

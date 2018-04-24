@@ -87,7 +87,7 @@ class OpenChannelCommand(BaseCommand):
 
 		# Specify remote host for ssh
 		env.user = portal_spec['spot_instance']['remote_user']
-		env.key_filename = [portal_spec['spot_instance']['ssh_key_file']]
+		env.key_filename = [portal_spec['spot_instance']['identity_file']]
 		env.hosts = [host_name]
 
 		# Periodically sync files across all channels

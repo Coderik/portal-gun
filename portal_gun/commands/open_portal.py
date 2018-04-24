@@ -146,7 +146,7 @@ class OpenPortalCommand(BaseCommand):
 
 		# Configure ssh connection via fabric
 		env.user = portal_spec['spot_instance']['remote_user']
-		env.key_filename = [portal_spec['spot_instance']['ssh_key_file']]
+		env.key_filename = [portal_spec['spot_instance']['identity_file']]
 		env.hosts = instance_info['PublicDnsName']
 		env.connection_attempts = self._fabric_retry_limit
 
@@ -188,7 +188,7 @@ class OpenPortalCommand(BaseCommand):
 
 		# Print ssh command
 		print('Use the following command to connect to the remote machine:')
-		print('ssh -i "{}" {}@{}'.format(portal_spec['spot_instance']['ssh_key_file'],
+		print('ssh -i "{}" {}@{}'.format(portal_spec['spot_instance']['identity_file'],
 										 portal_spec['spot_instance']['remote_user'],
 										 instance_info['PublicDnsName']))
 
