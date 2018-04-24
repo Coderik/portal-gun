@@ -16,6 +16,7 @@ Portal Specification
 			"availability_zone": "string (required)", 
 			"subnet_id": "string (optional)", 
 			"ebs_optimized": "boolean (optional)", 
+			"remote_group": "string (required)", 
 			"remote_user": "string (required)", 
 			"python_virtual_env": "string (optional)", 
 			"extra_python_packages": [
@@ -116,6 +117,13 @@ spot_instance . **ebs_optimized**
 	*Type: boolean. Optional.*
 
 	Enable/disable `EBS Optimization <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSOptimized.html>`_. An EBS–optimized instance uses an optimized configuration stack and provides additional, dedicated capacity for EBS I/O.
+
+spot_instance . **remote_group**
+"""""""""""""""""""""""""""""""
+
+	*Type: string. Required.*
+
+	Default AMI user group. For images based on Ubuntu in most cases the group will be *ubuntu*. If in doubt, check AMI usage instructions.
 
 spot_instance . **remote_user**
 """""""""""""""""""""""""""""""
