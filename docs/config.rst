@@ -31,6 +31,7 @@ Portal Gun requires the following access rights::
 	ec2:DescribeAccountAttributes
 
 	ec2:DescribeAvailabilityZones
+	ec2:DescribeSubnets
 
 	ec2:CreateVolume
 	ec2:ModifyVolume

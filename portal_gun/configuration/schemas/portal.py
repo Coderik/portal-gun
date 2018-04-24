@@ -8,7 +8,7 @@ class SpotInstanceSchema(Schema):
 	identity_file = fields.String(required=True)
 	security_group_id = fields.String(required=True)
 	availability_zone = fields.String(required=True)
-	subnet_id = fields.String(required=True)
+	subnet_id = fields.String()
 	ebs_optimized = fields.Boolean()
 	remote_user = fields.String(required=True)
 	python_virtual_env = fields.String()

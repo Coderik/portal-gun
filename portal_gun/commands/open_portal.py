@@ -58,6 +58,12 @@ class OpenPortalCommand(BaseCommand):
 				volume_ids = [volume_spec['volume_id'] for volume_spec in portal_spec['persistent_volumes']]
 				common.check_volumes_availability(aws, volume_ids)
 
+			# If subnet Id is not provided, pick the default subnet of the availability zone
+			if 'subnet_id' not in portal_spec['spot_instance'] or not portal_spec['spot_instance']['subnet_id']:
+				with step('Get subnet id', catch=[IndexError, KeyError]):
+					subnets = aws.get_subnets(portal_spec['spot_instance']['availability_zone'])
+					portal_spec['spot_instance']['subnet_id'] = subnets[0]['SubnetId']
+
 		# Make request for Spot instance
 		instance_type = portal_spec['spot_instance']['instance_type']
 		with print_scope('Requesting a Spot instance of type {}:'.format(instance_type)):
