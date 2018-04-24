@@ -18,7 +18,7 @@ Release v\ |version|.
 
 **Portal Gun** is a command line tool that automates repetitive tasks associated with the management of Spot Instances on Amazon EC2 service.
 
-TODO: explain why, what problem solves, give link to the article
+**TODO: explain why, what problem solves, give link to the article**
 
 User Guide
 ==========

@@ -111,6 +111,8 @@ spot_fleet . **iam_fleet_role**
 
 	*Type: string. Required.*
 
+.. _portal_spec_volumes:
+
 **persistent_volumes**
 ^^^^^^^^^^^^^^^^^^^^^^
 
@@ -138,6 +140,8 @@ persistent_volumes[] . **mount_point**
 	*Type: string. Required.*
 
 	Mounting point within the instance file system, where device representing the volume should be mounted. For example, ``/home/ubuntu/workspace`` (assuming that AMI username is *ubuntu*).
+
+.. _portal_spec_channels:
 
 **channels**
 ^^^^^^^^^^^^

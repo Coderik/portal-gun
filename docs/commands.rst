@@ -23,7 +23,7 @@ Add ``-h`` (or ``--help``) flag after commands and command groups to print corre
 Persistent Volumes
 ==================
 
-This section documents a group of commands that are used to manage persistent volumes. For information on how to configure attachment of persistent volumes to instances see :ref:`Portal Specification <portal_spec>` section.
+This section documents a group of commands that are used to manage persistent volumes. For information on how to configure attachment of persistent volumes to instances see :ref:`Portal Specification <portal_spec_volumes>` section.
 
 Create
 ------
@@ -127,7 +127,7 @@ Create a draft *portal specification* file::
 
     $ portal init <Portal-Name>
 
-A file with the name ``<Portal-Name>.json`` will be created. Modify this file to set the appropriate values. **TODO: add link to spec doc**
+A file with the name ``<Portal-Name>.json`` will be created. Modify this file to set the appropriate values (see :ref:`Portal Specification <portal_spec>` section).
 
 Open
 ----
@@ -196,7 +196,7 @@ To close a portal means to cancel a Spot Instance request and terminate the inst
 Channels
 ========
 
-Channels are used to sync remote and local folders. A channel has direction, source and target folders, and other properties. Every channel belongs to a portal and should be configured in the corresponding portal specification file (see :ref:`Portal Specification <portal_spec>` for details). 
+Channels are used to sync remote and local folders. A channel has direction, source and target folders, and other properties. Every channel belongs to a portal and should be configured in the corresponding portal specification file (see :ref:`Portal Specification <portal_spec_channels>` section for details). 
 
 Channel
 -------
