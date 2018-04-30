@@ -119,7 +119,7 @@ spot_instance . **ebs_optimized**
 	Enable/disable `EBS Optimization <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSOptimized.html>`_. An EBS–optimized instance uses an optimized configuration stack and provides additional, dedicated capacity for EBS I/O.
 
 spot_instance . **remote_group**
-"""""""""""""""""""""""""""""""
+""""""""""""""""""""""""""""""""
 
 	*Type: string. Required.*
 
@@ -243,7 +243,19 @@ Additional Details
 Deep Learning AMIs
 ^^^^^^^^^^^^^^^^^^
 
-**TODO: add details on where to find ids**
+`Amazon Machine Images (AMI) <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html>`_ are used to create virtual machines within the AWS EC2. They capture the exact state of software environment: operating system, libraries, applications, etc. One can think of them as templates. Pre-configured AMIs can be found in `AWS Marketplace <https://aws.amazon.com/marketplace/>`_. Some of them are free to use, others have per hour license price depending on the set of pre-installed software. EC2 users can also created their own Images.
+
+`Deep Learning AMIs <https://aws.amazon.com/machine-learning/amis/>`_ - is a group of AMIs created by Amazon specifically for deep learning applications. They come pre-installed with open-source deep learning frameworks including TensorFlow, Apache MXNet, PyTorch, Chainer, Microsoft Cognitive Toolkit, Caffe, Caffe2, Theano, and Keras, optimized for high performance on Amazon EC2 instances. These AMIs are free to use, you only pay for the AWS resources needed to store and run your applications. Official documentation, guides and tutorials can be found `here <https://docs.aws.amazon.com/dlami/latest/devguide/what-is-dlami.html>`_. 
+
+There are several different flavors of Deep Learning AMIs. Check the `guide <https://docs.aws.amazon.com/dlami/latest/devguide/options.html>`_ to know the difference between them.
+
+In order to instruct Portal Gun to use one of the Deep Learning AMIs to create an AWS Instance you need to know its **ID**:
+
+1. Go to `AWS Marketplace <https://aws.amazon.com/marketplace>`_ and search for *"deep learning ami"*;
+2. Pick an image from the search results, e.g. *Deep Learning Base AMI (Ubuntu)*;
+3. On the AMI's page click **Continue to Subscribe** button;
+4. On the opened page select **Manual Launch** tab;
+5. In the **Launch** section you will see AMI IDs for different regions.
 
 .. _rsync_help:
 
