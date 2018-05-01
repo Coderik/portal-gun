@@ -7,7 +7,14 @@ Configuration
 Application Config
 ==================
 
-Portal Gun reads basic configuration from a file in JSON format. By default it looks for a file named ``config.json`` in the current folder. Another location may be specified using ``-c, --config`` argument.
+Portal Gun reads basic configuration from a file in JSON format. By default it looks for a file named ``config.json`` in the following locations (in that order):
+
+1. script running path
+2. ``~/.portal-gun/``
+
+When Portal Gun is installed in a virtual Python environment (recommended), script running path is ``/virtual-env-path/bin/``.
+
+A custom location and filename may be specified using ``-c, --config`` argument.
 
 Values to set in the configuration file:
 
@@ -20,8 +27,6 @@ Values to set in the configuration file:
 	}
 
 Credentials (access and secret keys) for programmatic access on behalf of your AWS account can be found in the `IAM Console <https://console.aws.amazon.com/iam/home>`_. **It is recommended to create a separate user** for programmatic access via Portal Gun.
-
-**TODO: where to put config.json**
 
 AWS Access Rights
 =================
