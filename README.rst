@@ -4,6 +4,8 @@ Portal Gun
 
 Command line tool that automates routine tasks associated with the management of Spot Instances on Amazon EC2 service.
 
+Primarily it is intended to simplify usage of AWS Spot Instances for Deep Learning. This focus will further shape the future development.
+
 Documentation
 =============
 
