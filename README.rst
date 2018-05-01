@@ -12,6 +12,8 @@ Full documentation can be found at `http://portal-gun.readthedocs.io <http://por
 Installation
 ============
 
+It is **strongly recommended** to install Portal Gun in **a virtual Python environment**.
+
 To install the latest stable version from the PyPI::
 
     $ pip install -U portal-gun

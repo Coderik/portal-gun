@@ -158,6 +158,12 @@ spot_fleet . **iam_fleet_role**
 
 	*Type: string. Required.*
 
+	IAM role that grants the Spot Fleet permission to terminate Spot Instances on your behalf when you cancel its Spot Fleet request. For instance:
+
+	*arn:aws:iam::123456789012:role/aws-ec2-spot-fleet-tagging-role*
+
+	where "123456789012" should be replaced by your AWS Account Id which can be found in `AWS Console <https://console.aws.amazon.com/billing/home?#/account>`_.
+
 .. _portal_spec_volumes:
 
 **persistent_volumes**
@@ -166,6 +172,8 @@ spot_fleet . **iam_fleet_role**
 	*Type: array of objects. Required.*
 
 	Specifications of EBS volumes to be attached. Use :ref:`volume <volume_cmd>` group of commands to manage and list volumes.
+
+	**Note:** to be able to attach EBS Volumes to an Instance, they should be in the same Availability Zone.
 
 persistent_volumes[] . **volume_id**
 """"""""""""""""""""""""""""""""""""

@@ -16,7 +16,7 @@ Concepts
 Portal
 ------
 
-Portal Gun was design around the concept of *portals*, hence the name. A portal represents a remote environment and encapsulates such things as a virtual server (Spot Instance) of some type, an operating system of choice, libraries and frameworks, etc.
+Portal Gun was design around the concept of *portals*, hence the name. A *portal* represents a remote environment and encapsulates such things as virtual server (Spot Instance) of some type, persistent storage, operating system of choice, libraries and frameworks, etc.
 
 To *open* a portal means to request a Spot Instance. To *close* a portal means to cancel the request and terminate the instance. For example, if you are training a model, you open a portal for a training session and close it, when the training is finished. If you follow the recommended workflow (:ref:`see bellow <ref-workflow>`), you should be able to open the portal again and find everything exactly like you left it before.
 

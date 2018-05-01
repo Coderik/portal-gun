@@ -16,6 +16,8 @@ When Portal Gun is installed in a virtual Python environment (recommended), scri
 
 A custom location and filename may be specified using ``-c, --config`` argument.
 
+----
+
 Values to set in the configuration file:
 
 .. code-block:: json
@@ -32,6 +34,8 @@ AWS Access Rights
 =================
 
 Portal Gun requires the following access rights::
+
+	iam:PassRole
 
 	ec2:DescribeAccountAttributes
 

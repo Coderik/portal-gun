@@ -15,7 +15,7 @@ Note that Python 3 is not supported yet, because Fabric is Python 2 only. Migrat
 Install or upgrade from the PyPI
 ================================
 
-It is **strongly recommended** to install Portal Gun in **a virtual Python environment**.
+It is **strongly recommended** to install Portal Gun in **a virtual Python environment**. For details about virtual environments see `virtualenv documentation <https://virtualenv.pypa.io/en/stable/>`_.
 
 To install the latest stable version from the PyPI:
 
