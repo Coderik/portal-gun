@@ -12,10 +12,10 @@ import portal_gun.aws.helpers as aws_helpers
 from portal_gun.aws.aws_client import AwsClient
 from portal_gun.commands import common
 from portal_gun.commands.base_command import BaseCommand
-from portal_gun.commands.helpers import get_config, get_portal_spec
 from portal_gun.commands.exceptions import CommandError
-from portal_gun.context_managers.step import step
+from portal_gun.configuration.helpers import get_config, get_portal_spec
 from portal_gun.context_managers.print_scope import print_scope
+from portal_gun.context_managers.step import step
 
 
 class OpenPortalCommand(BaseCommand):
@@ -34,12 +34,12 @@ class OpenPortalCommand(BaseCommand):
 
 	# TODO: add verbose mode that prints all configs and dry-run mode to check the configs and permissions
 	def run(self):
-		print('Running `{}` command.\n'.format(self.cmd()))
-
 		# Find, parse and validate configs
 		with print_scope('Checking configuration:', 'Done.\n'):
 			config = get_config(self._args)
 			portal_spec, portal_name = get_portal_spec(self._args)
+
+		instance_spec = portal_spec['spot_instance']
 
 		# Create AWS client
 		aws = AwsClient(config['aws_access_key'], config['aws_secret_key'], config['aws_region'])
@@ -60,8 +60,14 @@ class OpenPortalCommand(BaseCommand):
 				volume_ids = [volume_spec['volume_id'] for volume_spec in portal_spec['persistent_volumes']]
 				common.check_volumes_availability(aws, volume_ids)
 
+			# If subnet Id is not provided, pick the default subnet of the availability zone
+			if 'subnet_id' not in instance_spec or not instance_spec['subnet_id']:
+				with step('Get subnet id', catch=[IndexError, KeyError]):
+					subnets = aws.get_subnets(instance_spec['availability_zone'])
+					instance_spec['subnet_id'] = subnets[0]['SubnetId']
+
 		# Make request for Spot instance
-		instance_type = portal_spec['spot_instance']['instance_type']
+		instance_type = instance_spec['instance_type']
 		with print_scope('Requesting a Spot instance of type {}:'.format(instance_type)):
 			request_config = aws_helpers.single_instance_spot_fleet_request(portal_spec, portal_name, user['Arn'])
 			response = aws.request_spot_fleet(request_config)
@@ -120,7 +126,7 @@ class OpenPortalCommand(BaseCommand):
 
 				# Check status code
 				if response['State'] not in ['attaching', 'attached']:
-					exit('Could not attach persistent volume `{}`'.format(volume_spec['volume_id']))
+					raise CommandError('Could not attach persistent volume `{}`'.format(volume_spec['volume_id']))
 
 			# Wait for persistent volumes to be attached
 			print('Waiting for the persistent volumes to be attached...')
@@ -147,8 +153,8 @@ class OpenPortalCommand(BaseCommand):
 		print('\nPersistent volumes are attached in {} seconds.\n'.format((datetime.datetime.now() - begin_time).seconds))
 
 		# Configure ssh connection via fabric
-		env.user = portal_spec['spot_instance']['remote_user']
-		env.key_filename = [portal_spec['spot_instance']['ssh_key_file']]
+		env.user = instance_spec['remote_user']
+		env.key_filename = [instance_spec['identity_file']]
 		env.hosts = instance_info['PublicDnsName']
 		env.connection_attempts = self._fabric_retry_limit
 
@@ -157,17 +163,22 @@ class OpenPortalCommand(BaseCommand):
 			for i in range(len(portal_spec['persistent_volumes'])):
 				with step('Mount volume #{}'.format(i), error_message='Could not mount volume', catch=[RuntimeError]):
 					volume_spec = portal_spec['persistent_volumes'][i]
+
+					# Mount volume
 					with hide('running', 'stdout'):
-						execute(self.mount_volume, volume_spec['device'], volume_spec['mount_point'])
+						execute(self.mount_volume, volume_spec['device'], volume_spec['mount_point'],
+								instance_spec['remote_group'], instance_spec['remote_user'])
+
+					# Store extra information in volume's tags
+					aws.add_tags(volume_spec['volume_id'], {'mount-point': volume_spec['mount_point']})
 
 			# TODO: consider importing and executing custom fab tasks instead
 			# Install extra python packages, if needed
-			if 'extra_python_packages' in portal_spec['spot_instance'] and \
-							len(portal_spec['spot_instance']['extra_python_packages']) > 0:
+			if 'extra_python_packages' in instance_spec and len(instance_spec['extra_python_packages']) > 0:
 				with step('Install extra python packages', error_message='Could not install python packages',
 						  catch=[RuntimeError]):
-					python_packages = portal_spec['spot_instance']['extra_python_packages']
-					virtual_env = portal_spec['spot_instance']['python_virtual_env']
+					python_packages = instance_spec['extra_python_packages']
+					virtual_env = instance_spec['python_virtual_env']
 					with hide('running', 'stdout'):
 						execute(self.install_python_packages, python_packages, virtual_env)
 
@@ -185,21 +196,28 @@ class OpenPortalCommand(BaseCommand):
 
 		# Print ssh command
 		print('Use the following command to connect to the remote machine:')
-		print('ssh -i "{}" {}@{}'.format(portal_spec['spot_instance']['ssh_key_file'],
-										 portal_spec['spot_instance']['remote_user'],
+		print('ssh -i "{}" {}@{}'.format(instance_spec['identity_file'],
+										 instance_spec['remote_user'],
 										 instance_info['PublicDnsName']))
 
-	def mount_volume(self, device, mount_point):
-		# Ensure volume contains a file system
+	def mount_volume(self, device, mounting_point, group, user):
+		# Inspect volume's file system
 		out = sudo('file -s {}'.format(device))
-		if out == '{}: data'.format(device):
+
+		# Ensure volume contains a file system
+		has_file_system = out != '{}: data'.format(device)
+		if not has_file_system:
 			sudo('mkfs -t ext4 {}'.format(device))
 
-		# Create mount point
-		run('mkdir -p {}'.format(mount_point))
+		# Create mounting point
+		run('mkdir -p {}'.format(mounting_point))
 
 		# Mount volume
-		sudo('mount {} {}'.format(device, mount_point))
+		sudo('mount {} {}'.format(device, mounting_point))
+
+		# If file system has just been created, fix group and user of the mounting point
+		if not has_file_system:
+			sudo('chown -R {}:{} {}'.format(group, user, mounting_point))
 
 	def install_python_packages(self, packages, virtual_env):
 		with prefix('source activate {}'.format(virtual_env)):

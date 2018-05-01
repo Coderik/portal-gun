@@ -3,9 +3,9 @@ from __future__ import print_function
 from portal_gun.aws.aws_client import AwsClient
 from portal_gun.commands import common
 from portal_gun.commands.base_command import BaseCommand
-from portal_gun.commands.helpers import get_config, get_portal_spec
-from portal_gun.context_managers.step import step
+from portal_gun.configuration.helpers import get_config, get_portal_spec
 from portal_gun.context_managers.print_scope import print_scope
+from portal_gun.context_managers.step import step
 
 
 class ClosePortalCommand(BaseCommand):
@@ -22,8 +22,6 @@ class ClosePortalCommand(BaseCommand):
 		parser.add_argument('portal', help='Name of portal')
 
 	def run(self):
-		print('Running `{}` command.\n'.format(self.cmd()))
-
 		# Find, parse and validate configs
 		with print_scope('Checking configuration:', 'Done.\n'):
 			config = get_config(self._args)
@@ -54,5 +52,11 @@ class ClosePortalCommand(BaseCommand):
 
 		# Cancel spot instance request
 		aws.cancel_spot_fleet_request(spot_fleet_request_id)
+
+		# Clean up volumes' tags
+		volume_ids = [volume['Ebs']['VolumeId']
+					  for volume in spot_instance['BlockDeviceMappings']
+					  if not volume['Ebs']['DeleteOnTermination']]
+		aws.remove_tags(volume_ids, 'mount-point')
 
 		print('Portal `{}` has been closed.'.format(portal_name))
