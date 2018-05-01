@@ -88,6 +88,7 @@ html_show_sourcelink = False
 # documentation.
 #
 html_theme_options = {
+    'logo': 'portal_gun.png',
     'github_user': 'Coderik',
     'github_repo': 'portal-gun',
     'github_banner': True,
@@ -106,8 +107,11 @@ html_static_path = ['_static']
 # defined by theme itself.  Builtin themes are using these templates by
 # default: ``['localtoc.html', 'relations.html', 'sourcelink.html',
 # 'searchbox.html']``.
-#
-# html_sidebars = {}
+
+html_sidebars = {
+    'index': ['about.html', 'searchbox.html'],
+    '**': ['about.html', 'localtoc.html', 'relations.html', 'searchbox.html']
+}
 
 
 # -- Options for HTMLHelp output ---------------------------------------------
