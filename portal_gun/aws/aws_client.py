@@ -56,6 +56,24 @@ class AwsClient(object):
 		return zones
 
 	@api_caller()
+	def get_subnets(self, availability_zone):
+		# Define filters
+		filters = [{'Name': 'availability-zone', 'Values': [availability_zone]},
+				   {'Name': 'default-for-az', 'Values': ['true']}]
+
+		# Call API
+		response = self.ec2_client().describe_subnets(Filters=filters)
+
+		self._check_status_code(response)
+
+		try:
+			subnets = response['Subnets']
+		except KeyError as e:
+			raise AwsRequestError('Response from AWS has unexpected format: {}.'.format(e.message))
+
+		return subnets
+
+	@api_caller()
 	def find_spot_instance(self, portal_name, user):
 		# Define filters
 		filters = [{'Name': 'tag:portal-name', 'Values': [portal_name]},

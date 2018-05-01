@@ -5,13 +5,25 @@ from collections import OrderedDict
 from marshmallow import fields
 
 from portal_gun.configuration.schemas import ConfigSchema, PortalSchema, ValidationError
+from portal_gun.configuration.constants import config_paths
 from portal_gun.context_managers.step import step
 
 
 def get_config(args):
 	# Parse global config
 	with step('Parse config file', catch=[IOError, ValueError]):
-		with open(args.config) as config_file:
+		config_path = args.config
+
+		# If config file is not specified in arguments, look for it in default locations
+		if config_path is None:
+			for p in config_paths:
+				if path.exists(p):
+					config_path = p
+					break
+			else:
+				raise ValueError('Could not find config file')
+
+		with open(config_path) as config_file:
 			config_data = json.load(config_file)
 
 	# Validate global config

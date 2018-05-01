@@ -5,13 +5,14 @@ class SpotInstanceSchema(Schema):
 	instance_type = fields.String(required=True)
 	image_id = fields.String(required=True)
 	key_pair_name = fields.String(required=True)
+	identity_file = fields.String(required=True)
 	security_group_id = fields.String(required=True)
 	availability_zone = fields.String(required=True)
-	subnet_id = fields.String(required=True)
+	subnet_id = fields.String()
 	ebs_optimized = fields.Boolean()
-	ssh_key_file = fields.String(required=True)
+	remote_group = fields.String(required=True)
 	remote_user = fields.String(required=True)
-	python_virtual_env = fields.String(required=True)
+	python_virtual_env = fields.String()
 	extra_python_packages = fields.List(fields.String)
 
 	class Meta:

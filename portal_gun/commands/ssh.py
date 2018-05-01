@@ -44,7 +44,7 @@ class SshCommand(BaseCommand):
 			raise CommandError('Portal `{}` does not seem to be opened'.format(portal_name))
 
 		# Get values for ssh
-		key_file = portal_spec['spot_instance']['ssh_key_file']
+		key_file = portal_spec['spot_instance']['identity_file']
 		user = portal_spec['spot_instance']['remote_user']
 		host = instance_info['PublicDnsName']
 
