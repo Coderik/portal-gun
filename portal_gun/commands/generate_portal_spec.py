@@ -1,9 +1,8 @@
-from os import path
 import json
+from os import path
 
 from portal_gun.commands.base_command import BaseCommand
-from portal_gun.configuration.schemas import PortalSchema
-from portal_gun.configuration.helpers import generate_draft
+from portal_gun.commands.handlers import AwsHandler
 
 
 class GeneratePortalSpecCommand(BaseCommand):
@@ -33,7 +32,7 @@ class GeneratePortalSpecCommand(BaseCommand):
 			return
 
 		# Generate draft of a portal spec and pretty print it to JSON
-		spec_str = json.dumps(generate_draft(PortalSchema()), indent=4)
+		spec_str = json.dumps(AwsHandler.generate_portal_spec(), indent=4)
 
 		# Write portal spec to file
 		with open(file_name, 'w') as f:
