@@ -473,7 +473,8 @@ class AwsHandler(BaseHandler):
 	def _create_aws_client(self):
 		assert self._config
 
-		return AwsClient(self._config['aws_access_key'], self._config['aws_secret_key'], self._config['aws_region'])
+		return AwsClient(self._config['aws']['access_key'],
+						 self._config['aws']['secret_key'], self._config['aws']['region'])
 
 	def _print_volume_info(self, volume):
 		tags = volume['Tags'] if 'Tags' in volume else []
