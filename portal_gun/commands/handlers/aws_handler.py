@@ -36,7 +36,11 @@ class AwsHandler(BaseHandler):
 		# Create AWS client
 		aws = self._create_aws_client()
 
-		instance_spec = portal_spec['spot_instance']
+		# Define shortcuts
+		compute_spec = portal_spec['compute']
+		instance_spec = compute_spec['instance']
+		network_spec = compute_spec['network']
+		auth_spec = compute_spec['auth']
 
 		with print_scope('Retrieving data from AWS:', 'Done.\n'):
 			# Get current user
@@ -55,14 +59,13 @@ class AwsHandler(BaseHandler):
 				common.check_volumes_availability(aws, volume_ids)
 
 			# If subnet Id is not provided, pick the default subnet of the availability zone
-			if 'subnet_id' not in instance_spec or not instance_spec['subnet_id']:
+			if 'subnet_id' not in network_spec or not network_spec['subnet_id']:
 				with step('Get subnet id', catch=[IndexError, KeyError]):
 					subnets = aws.get_subnets(instance_spec['availability_zone'])
-					instance_spec['subnet_id'] = subnets[0]['SubnetId']
+					network_spec['subnet_id'] = subnets[0]['SubnetId']
 
 		# Make request for Spot instance
-		instance_type = instance_spec['instance_type']
-		with print_scope('Requesting a Spot instance of type {}:'.format(instance_type)):
+		with print_scope('Requesting a Spot instance of type {}:'.format(instance_spec['type'])):
 			request_config = aws_helpers.single_instance_spot_fleet_request(portal_spec, portal_name, user['Arn'])
 			response = aws.request_spot_fleet(request_config)
 			spot_fleet_request_id = response['SpotFleetRequestId']
@@ -147,7 +150,7 @@ class AwsHandler(BaseHandler):
 		print('\nPersistent volumes are attached in {} seconds.\n'.format((datetime.datetime.now() - begin_time).seconds))
 
 		# Configure ssh connection via fabric
-		ssh.configure(instance_spec['identity_file'], instance_spec['remote_user'], instance_info['PublicDnsName'])
+		ssh.configure(auth_spec['identity_file'], auth_spec['user'], instance_info['PublicDnsName'])
 
 		with print_scope('Preparing the instance:', 'Instance is ready.\n'):
 			# Mount persistent volumes
@@ -158,18 +161,21 @@ class AwsHandler(BaseHandler):
 
 					# Mount volume
 					ssh.mount_volume(volume_spec['device'], volume_spec['mount_point'],
-									 instance_spec['remote_user'], instance_spec['remote_group'])
+									 auth_spec['user'], auth_spec['group'])
 
 					# Store extra information in volume's tags
 					aws.add_tags(volume_spec['volume_id'], {'mount-point': volume_spec['mount_point']})
 
 			# TODO: consider importing and executing custom fab tasks instead
 			# Install extra python packages, if needed
-			if 'extra_python_packages' in instance_spec and len(instance_spec['extra_python_packages']) > 0:
-				with step('Install extra python packages', error_message='Could not install python packages',
-						  catch=[RuntimeError]):
-					ssh.install_python_packages(instance_spec['python_virtual_env'],
-												instance_spec['extra_python_packages'])
+			if 'provision_actions' in compute_spec and len(compute_spec['provision_actions']) > 0:
+				for action_spec in compute_spec['provision_actions']:
+					if action_spec['name'] == 'install-python-packages':
+						virtual_env = action_spec['args']['virtual_env']
+						packages = action_spec['args']['packages']
+						with step('Install extra python packages', error_message='Could not install python packages',
+								  catch=[RuntimeError]):
+							ssh.install_python_packages(virtual_env, packages)
 
 		# Print summary
 		print('Portal `{}` is now opened.'.format(portal_name))
@@ -185,8 +191,8 @@ class AwsHandler(BaseHandler):
 
 		# Print ssh command
 		print('Use the following command to connect to the remote machine:')
-		print('ssh -i "{}" {}@{}'.format(instance_spec['identity_file'],
-										 instance_spec['remote_user'],
+		print('ssh -i "{}" {}@{}'.format(auth_spec['identity_file'],
+										 auth_spec['user'],
 										 instance_info['PublicDnsName']))
 
 	def close_portal(self, portal_spec, portal_name):
@@ -228,6 +234,9 @@ class AwsHandler(BaseHandler):
 		# Create AWS client
 		aws = self._create_aws_client()
 
+		# Define shortcut
+		auth_spec = portal_spec['compute']['auth']
+
 		volumes = []
 		with print_scope('Retrieving data from AWS:', 'Done.\n'):
 			# Get current user
@@ -258,7 +267,7 @@ class AwsHandler(BaseHandler):
 				print('Type:              {}'.format(instance_info['InstanceType']))
 				print('Public IP:         {}'.format(instance_info['PublicIpAddress']))
 				print('Public DNS name:   {}'.format(instance_info['PublicDnsName']))
-				print('User:              {}'.format(portal_spec['spot_instance']['remote_user']))
+				print('User:              {}'.format(auth_spec['user']))
 
 			with print_scope('Persistent volumes:', ''):
 				for i in range(len(volumes)):
@@ -268,8 +277,8 @@ class AwsHandler(BaseHandler):
 
 			# Print ssh command
 			with print_scope('Use the following command to connect to the remote machine:'):
-				print('ssh -i "{}" {}@{}'.format(portal_spec['spot_instance']['identity_file'],
-												 portal_spec['spot_instance']['remote_user'],
+				print('ssh -i "{}" {}@{}'.format(auth_spec['identity_file'],
+												 auth_spec['user'],
 												 instance_info['PublicDnsName']))
 		else:
 			with print_scope('Summary:'):
@@ -277,12 +286,15 @@ class AwsHandler(BaseHandler):
 				print('Status:            close')
 
 	def get_portal_info_field(self, portal_spec, portal_name, field):
+		# Define shortcut
+		auth_spec = portal_spec['compute']['auth']
+
 		if field == 'name':
 			return portal_name
 		if field == 'user':
-			return portal_spec['spot_instance']['remote_user']
+			return auth_spec['user']
 		if field == 'key':
-			return portal_spec['spot_instance']['identity_file']
+			return auth_spec['identity_file']
 
 		# Create AWS client
 		aws = self._create_aws_client()
@@ -309,13 +321,16 @@ class AwsHandler(BaseHandler):
 		if field == 'ip':
 			return instance_info['PublicIpAddress']
 		if field == 'remote':
-			return '{}@{}'.format(portal_spec['spot_instance']['remote_user'], instance_info['PublicDnsName'])
+			return '{}@{}'.format(auth_spec['user'], instance_info['PublicDnsName'])
 
 		return None
 
 	def get_ssh_params(self, portal_spec, portal_name):
 		# Create AWS client
 		aws = self._create_aws_client()
+
+		# Define shortcut
+		auth_spec = portal_spec['compute']['auth']
 
 		with print_scope('Retrieving data from AWS:', 'Done.\n'):
 			# Get current user
@@ -329,8 +344,8 @@ class AwsHandler(BaseHandler):
 					raise CommandError('Portal `{}` does not seem to be opened'.format(portal_name))
 
 		# Return parameters for ssh
-		return (portal_spec['spot_instance']['identity_file'],
-				portal_spec['spot_instance']['remote_user'],
+		return (auth_spec['identity_file'],
+				auth_spec['user'],
 				instance_info['PublicDnsName'])
 
 	def list_volumes(self, args):

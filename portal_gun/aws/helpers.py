@@ -21,12 +21,14 @@ def from_aws_tags(tags):
 
 
 def single_instance_spot_fleet_request(portal_spec, portal_name, user):
-	instance_spec = portal_spec['spot_instance']
-	fleet_spec = portal_spec['spot_fleet']
+	# Define shortcuts
+	instance_spec = portal_spec['compute']['instance']
+	network_spec = portal_spec['compute']['network']
+	auth_spec = portal_spec['compute']['auth']
 
 	fleet_request_config = {
 		'AllocationStrategy': 'lowestPrice',
-		'IamFleetRole': fleet_spec['iam_fleet_role'],
+		'IamFleetRole': instance_spec['iam_fleet_role'],
 		'TargetCapacity': 1,
 		'ValidFrom': datetime.datetime.utcnow().isoformat().rsplit('.', 1)[0] + 'Z',
   		'ValidUntil': (datetime.datetime.utcnow() + datetime.timedelta(days=60)).isoformat().rsplit('.', 1)[0] + 'Z',
@@ -35,14 +37,14 @@ def single_instance_spot_fleet_request(portal_spec, portal_name, user):
 		'LaunchSpecifications': [
 			{
 				'ImageId': instance_spec['image_id'],
-				'InstanceType': instance_spec['instance_type'],
-				'KeyName': instance_spec['key_pair_name'],
+				'InstanceType': instance_spec['type'],
+				'KeyName': auth_spec['key_pair_name'],
 				'Placement': {
 					'AvailabilityZone': instance_spec['availability_zone']
 				},
 				'NetworkInterfaces': [{
-					'SubnetId': instance_spec['subnet_id'],
-					'Groups': [instance_spec['security_group_id']],
+					'SubnetId': network_spec['subnet_id'],
+					'Groups': [network_spec['security_group_id']],
 					'DeviceIndex': 0
 				}],
 				'TagSpecifications': [{
@@ -63,13 +65,18 @@ def single_instance_spot_fleet_request(portal_spec, portal_name, user):
 	return fleet_request_config
 
 
-def build_instance_launch_spec(instance_spec):
+def build_instance_launch_spec(portal_spec):
+	# Define shortcuts
+	instance_spec = portal_spec['compute']['instance']
+	network_spec = portal_spec['compute']['network']
+	auth_spec = portal_spec['compute']['auth']
+
 	# Set required fields
 	aws_launch_spec = {
-		'SecurityGroupIds': [instance_spec['security_group_id']],
+		'SecurityGroupIds': [network_spec['security_group_id']],
 		'ImageId': instance_spec['image_id'],
-		'InstanceType': instance_spec['instance_type'],
-		'KeyName': instance_spec['key_pair_name'],
+		'InstanceType': instance_spec['type'],
+		'KeyName': auth_spec['key_pair_name'],
 		'Placement': {
 			'AvailabilityZone': instance_spec['availability_zone']
 		}

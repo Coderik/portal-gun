@@ -1,29 +1,18 @@
 from marshmallow import fields, Schema
+from portal_gun.one_of_schema import OneOfSchema  # replace by the proper marshmallow-oneofschema package
+
+from .compute_aws import ComputeAwsSchema
 
 
-class SpotInstanceSchema(Schema):
-	instance_type = fields.String(required=True)
-	image_id = fields.String(required=True)
-	key_pair_name = fields.String(required=True)
-	identity_file = fields.String(required=True)
-	security_group_id = fields.String(required=True)
-	availability_zone = fields.String(required=True)
-	subnet_id = fields.String()
-	ebs_optimized = fields.Boolean()
-	remote_group = fields.String(required=True)
-	remote_user = fields.String(required=True)
-	python_virtual_env = fields.String()
-	extra_python_packages = fields.List(fields.String)
+class ComputeSchema(OneOfSchema):
+	type_field = 'provider'
+	type_field_remove = False
+	type_schemas = {
+		'aws': ComputeAwsSchema
+	}
 
-	class Meta:
-		ordered = True
-
-
-class SpotFleetSchema(Schema):
-	iam_fleet_role = fields.String(required=True)
-
-	class Meta:
-		ordered = True
+	def get_obj_type(self, obj):
+		return 'aws'
 
 
 class PersistentVolumeSchema(Schema):
@@ -47,8 +36,7 @@ class ChannelSchema(Schema):
 
 
 class PortalSchema(Schema):
-	spot_instance = fields.Nested(SpotInstanceSchema, required=True)
-	spot_fleet = fields.Nested(SpotFleetSchema, required=True)
+	compute = fields.Nested(ComputeSchema, required=True)
 	persistent_volumes = fields.Nested(PersistentVolumeSchema, required=True, many=True)
 	channels = fields.Nested(ChannelSchema, required=True, many=True)
 

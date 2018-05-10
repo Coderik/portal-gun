@@ -18,6 +18,9 @@ def mount_volume(device, mount_point, user, group):
 
 
 def install_python_packages(virtual_env, packages):
+	if not packages:
+		return
+
 	with hide('running', 'stdout'):
 		execute(tasks.install_python_packages, virtual_env, packages)
 
