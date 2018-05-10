@@ -10,6 +10,9 @@ class InstanceSchema(Schema):
 	ebs_optimized = fields.Boolean()
 	iam_fleet_role = fields.String(required=True)
 
+	class Meta:
+		ordered = True
+
 
 class AuthSchema(Schema):
 	key_pair_name = fields.String(required=True)
@@ -17,17 +20,23 @@ class AuthSchema(Schema):
 	user = fields.String(required=True)
 	group = fields.String(required=True)
 
+	class Meta:
+		ordered = True
+
 
 class NetworkSchema(Schema):
 	security_group_id = fields.String(required=True)
 	subnet_id = fields.String()
+
+	class Meta:
+		ordered = True
 
 
 class ComputeAwsSchema(Schema):
 	instance = fields.Nested(InstanceSchema, required=True)
 	auth = fields.Nested(AuthSchema, required=True)
 	network = fields.Nested(NetworkSchema, required=True)
-	provision_actions = fields.List(fields.Nested(ProvisionActionSchema))
+	provision_actions = fields.Nested(ProvisionActionSchema, many=True)
 
 	class Meta:
 		ordered = True

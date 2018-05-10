@@ -11,7 +11,7 @@ from portal_gun.commands import common
 from portal_gun.commands.exceptions import CommandError
 from portal_gun.commands.handlers.base_handler import BaseHandler
 from portal_gun.configuration.helpers import generate_draft
-from portal_gun.configuration.schemas import PortalSchema
+from portal_gun.configuration.schemas import PortalSchema, ComputeSchema
 from portal_gun.context_managers.print_scope import print_scope
 from portal_gun.context_managers.step import step
 from portal_gun.helpers.pretty_print import print_volume
@@ -30,7 +30,7 @@ class AwsHandler(BaseHandler):
 
 	@staticmethod
 	def generate_portal_spec():
-		return generate_draft(PortalSchema())
+		return generate_draft(PortalSchema(), selectors={ComputeSchema: 'aws'})
 
 	def open_portal(self, portal_spec, portal_name):
 		# Create AWS client
