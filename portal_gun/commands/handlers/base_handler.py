@@ -4,6 +4,10 @@ class BaseHandler(object):
 		self._config = config
 
 	@staticmethod
+	def provider():
+		raise NotImplementedError('Every subclass of BaseHandler should implement static provider() method.')
+
+	@staticmethod
 	def generate_portal_spec():
 		"""
 		Generate draft of portal specification in dictionary format.

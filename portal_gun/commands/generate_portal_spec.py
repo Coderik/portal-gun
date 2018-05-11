@@ -1,8 +1,9 @@
 import json
 from os import path
 
-from portal_gun.commands.base_command import BaseCommand
-from portal_gun.commands.handlers import AwsHandler
+from portal_gun.configuration.helpers import get_portal_name
+from .base_command import BaseCommand
+from .handlers import generate_portal_spec
 
 
 class GeneratePortalSpecCommand(BaseCommand):
@@ -19,8 +20,10 @@ class GeneratePortalSpecCommand(BaseCommand):
 		parser.add_argument('portal', help='Name of portal')
 
 	def run(self):
+		provider_name = 'aws'
+
 		# Get portal name
-		portal_name = self._args.portal.rsplit('.', 1)[0]
+		portal_name = get_portal_name(self._args)
 
 		# Confirm portal name to user
 		print('Creating draft specification for `{}` portal.'.format(portal_name))
@@ -32,7 +35,7 @@ class GeneratePortalSpecCommand(BaseCommand):
 			return
 
 		# Generate draft of a portal spec and pretty print it to JSON
-		spec_str = json.dumps(AwsHandler.generate_portal_spec(), indent=4)
+		spec_str = json.dumps(generate_portal_spec(provider_name), indent=4)
 
 		# Write portal spec to file
 		with open(file_name, 'w') as f:

@@ -10,9 +10,9 @@ from portal_gun.configuration.constants import config_paths
 from portal_gun.context_managers.step import step
 
 
-def get_config(args):
-	# Parse global config
-	with step('Parse config file', catch=[IOError, ValueError]):
+def get_provider_config(args, provider_name):
+	# Parse general config
+	with step('Parse general config file', catch=[IOError, ValueError]):
 		config_path = args.config
 
 		# If config file is not specified in arguments, look for it in default locations
@@ -28,15 +28,23 @@ def get_config(args):
 			config_data = json.load(config_file)
 
 	# Validate global config
-	with step('Validate config', catch=[ValidationError]):
+	with step('Validate general config', catch=[ValidationError]):
 		config = ConfigSchema().load(config_data)
 
-	return config
+	# Retrieve cloud provider config
+	with step('Retrieve provider config ({})'.format(provider_name),
+			  error_message='Cloud provider {} is not configured'.format(provider_name), catch=[KeyError]):
+		provider_config = config[provider_name]
+
+	return provider_config
 
 
-def get_portal_spec(args):
-	# Get portal name and spec file
-	portal_name = args.portal.rsplit('.', 1)[0]
+def get_portal_name(args):
+	return args.portal.rsplit('.', 1)[0]
+
+
+def get_portal_spec(portal_name):
+	# Get portal spec file
 	spec_filename = '{}.json'.format(portal_name)
 
 	# Ensure spec file exists
@@ -53,7 +61,11 @@ def get_portal_spec(args):
 	with step('Validate portal specification', catch=[ValidationError]):
 		portal_spec = PortalSchema().load(portal_spec_data)
 
-	return portal_spec, portal_name
+	return portal_spec
+
+
+def get_provider_from_portal(portal_spec):
+	return portal_spec['compute']['provider']
 
 
 def generate_draft(schema, selectors=None):

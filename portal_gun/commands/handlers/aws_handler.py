@@ -29,6 +29,10 @@ class AwsHandler(BaseHandler):
 		self._max_size = 16384  # Gb
 
 	@staticmethod
+	def provider():
+		return 'aws'
+
+	@staticmethod
 	def generate_portal_spec():
 		return generate_draft(PortalSchema(), selectors={ComputeSchema: 'aws'})
 
@@ -488,8 +492,8 @@ class AwsHandler(BaseHandler):
 	def _create_aws_client(self):
 		assert self._config
 
-		return AwsClient(self._config['aws']['access_key'],
-						 self._config['aws']['secret_key'], self._config['aws']['region'])
+		return AwsClient(self._config['access_key'],
+						 self._config['secret_key'], self._config['region'])
 
 	def _print_volume_info(self, volume):
 		tags = volume['Tags'] if 'Tags' in volume else []

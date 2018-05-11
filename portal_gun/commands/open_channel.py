@@ -1,11 +1,12 @@
 import threading
 
 import portal_gun.ssh_ops as ssh
-from portal_gun.commands.base_command import BaseCommand
-from portal_gun.commands.handlers import AwsHandler
-from portal_gun.configuration.helpers import get_config, get_portal_spec
+from portal_gun.configuration.helpers import get_provider_config, get_portal_spec, get_portal_name, \
+	get_provider_from_portal
 from portal_gun.context_managers.print_scope import print_scope
 from portal_gun.context_managers.step import step
+from .base_command import BaseCommand
+from .handlers import create_handler
 
 
 def run_periodically(callable, callable_args, delay):
@@ -29,8 +30,10 @@ class OpenChannelCommand(BaseCommand):
 	def run(self):
 		# Find, parse and validate configs
 		with print_scope('Checking configuration:', 'Done.\n'):
-			config = get_config(self._args)
-			portal_spec, portal_name = get_portal_spec(self._args)
+			portal_name = get_portal_name(self._args)
+			portal_spec = get_portal_spec(portal_name)
+			provider_name = get_provider_from_portal(portal_spec)
+			provider_config = get_provider_config(self._args, provider_name)
 
 			# Ensure there is at least one channel spec
 			with step('Check specifications for channels',
@@ -39,8 +42,8 @@ class OpenChannelCommand(BaseCommand):
 				if len(channels) == 0:
 					raise Exception()
 
-		# Create appropriate command handler
-		handler = AwsHandler(config)
+		# Create appropriate command handler for given cloud provider
+		handler = create_handler(provider_name, provider_config)
 
 		identity_file, user, host = handler.get_ssh_params(portal_spec, portal_name)
 

@@ -33,6 +33,7 @@ class NetworkSchema(Schema):
 
 
 class ComputeAwsSchema(Schema):
+	provider = fields.String(required=True)
 	instance = fields.Nested(InstanceSchema, required=True)
 	auth = fields.Nested(AuthSchema, required=True)
 	network = fields.Nested(NetworkSchema, required=True)

@@ -1,9 +1,9 @@
 from __future__ import print_function
 
-from portal_gun.commands.base_command import BaseCommand
-from portal_gun.commands.handlers import AwsHandler
-from portal_gun.configuration.helpers import get_config
+from portal_gun.configuration.helpers import get_provider_config
 from portal_gun.context_managers.print_scope import print_scope
+from .base_command import BaseCommand
+from .handlers import create_handler
 
 
 class VolumeCommand(BaseCommand):
@@ -62,12 +62,14 @@ class VolumeCommand(BaseCommand):
 		parser_delete.set_defaults(actor=lambda handler, args: handler.delete_volume(args))
 
 	def run(self):
+		provider_name = 'aws'
+
 		# Find, parse and validate configs
 		with print_scope('Checking configuration:', 'Done.\n'):
-			config = get_config(self._args)
+			provider_config = get_provider_config(self._args, provider_name)
 
-		# Create appropriate command handler
-		handler = AwsHandler(config)
+		# Create appropriate command handler for given cloud provider
+		handler = create_handler(provider_name, provider_config)
 
 		# Call corresponding actor to handle selected subcommand
 		self._args.actor(handler, self._args)

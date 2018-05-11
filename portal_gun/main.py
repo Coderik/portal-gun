@@ -24,7 +24,7 @@ def main():
 	command = create_command(args.command, args)
 
 	if command is None:
-		exit('Unknown command "{}".'.format(args.command))
+		exit('Unknown command: {}'.format(args.command))
 
 	try:
 		command.run()
