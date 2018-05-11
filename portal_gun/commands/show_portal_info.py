@@ -1,4 +1,4 @@
-from portal_gun.configuration.helpers import get_provider_config, get_portal_spec, get_portal_name, \
+from portal_gun.commands.helpers import get_provider_config, get_portal_spec, get_portal_name, \
 	get_provider_from_portal
 from portal_gun.context_managers.no_print import no_print
 from portal_gun.context_managers.print_scope import print_scope
@@ -39,10 +39,10 @@ class ShowPortalInfoCommand(BaseCommand):
 
 		with no_print():
 			# Find, parse and validate configs
-			portal_name = get_portal_name(self._args)
+			portal_name = get_portal_name(self._args.portal)
 			portal_spec = get_portal_spec(portal_name)
 			provider_name = get_provider_from_portal(portal_spec)
-			provider_config = get_provider_config(self._args, provider_name)
+			provider_config = get_provider_config(self._args.config, provider_name)
 
 			# Create appropriate command handler for given cloud provider
 			handler = create_handler(provider_name, provider_config)
@@ -52,10 +52,10 @@ class ShowPortalInfoCommand(BaseCommand):
 	def show_full_info(self):
 		# Find, parse and validate configs
 		with print_scope('Checking configuration:', 'Done.\n'):
-			portal_name = get_portal_name(self._args)
+			portal_name = get_portal_name(self._args.portal)
 			portal_spec = get_portal_spec(portal_name)
 			provider_name = get_provider_from_portal(portal_spec)
-			provider_config = get_provider_config(self._args, provider_name)
+			provider_config = get_provider_config(self._args.config, provider_name)
 
 		# Create appropriate command handler for given cloud provider
 		handler = create_handler(provider_name, provider_config)

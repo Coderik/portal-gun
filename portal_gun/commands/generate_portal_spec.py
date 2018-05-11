@@ -1,9 +1,9 @@
 import json
 from os import path
 
-from portal_gun.configuration.helpers import get_portal_name
+from portal_gun.commands.helpers import get_portal_name, get_provider_from_env, get_provider_from_user
 from .base_command import BaseCommand
-from .handlers import generate_portal_spec
+from .handlers import list_providers, generate_portal_spec
 
 
 class GeneratePortalSpecCommand(BaseCommand):
@@ -18,12 +18,17 @@ class GeneratePortalSpecCommand(BaseCommand):
 	def add_subparser(cls, subparsers):
 		parser = subparsers.add_parser(cls.cmd(), help='Generate template specification file for new portal')
 		parser.add_argument('portal', help='Name of portal')
+		provider_group = parser.add_mutually_exclusive_group()
+		for name in list_providers():
+			provider_group.add_argument('--{}'.format(name), action='store_const', const=name, dest='provider')
 
 	def run(self):
-		provider_name = 'aws'
+		providers = list_providers()
+		provider_name = self._args.provider or \
+						get_provider_from_env(choices=providers) or \
+						get_provider_from_user(choices=providers)
 
-		# Get portal name
-		portal_name = get_portal_name(self._args)
+		portal_name = get_portal_name(self._args.portal)
 
 		# Confirm portal name to user
 		print('Creating draft specification for `{}` portal.'.format(portal_name))

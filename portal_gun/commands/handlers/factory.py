@@ -25,3 +25,12 @@ def create_handler(provider_name, config):
 
 	handler_class = get_handler_class(provider_name)
 	return handler_class(config)
+
+
+def list_providers():
+	"""
+	Get list of all supported cloud providers
+	:rtype: list
+	"""
+
+	return [cls.provider() for cls in BaseHandler.__subclasses__()]

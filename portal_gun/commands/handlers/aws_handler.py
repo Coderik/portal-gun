@@ -10,7 +10,7 @@ from portal_gun.aws.aws_client import AwsClient
 from portal_gun.commands import common
 from portal_gun.commands.exceptions import CommandError
 from portal_gun.commands.handlers.base_handler import BaseHandler
-from portal_gun.configuration.helpers import generate_draft
+from portal_gun.configuration.draft import generate_draft
 from portal_gun.configuration.schemas import PortalSchema, ComputeSchema
 from portal_gun.context_managers.print_scope import print_scope
 from portal_gun.context_managers.step import step

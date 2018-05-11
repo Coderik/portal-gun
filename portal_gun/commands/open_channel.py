@@ -1,7 +1,7 @@
 import threading
 
 import portal_gun.ssh_ops as ssh
-from portal_gun.configuration.helpers import get_provider_config, get_portal_spec, get_portal_name, \
+from portal_gun.commands.helpers import get_provider_config, get_portal_spec, get_portal_name, \
 	get_provider_from_portal
 from portal_gun.context_managers.print_scope import print_scope
 from portal_gun.context_managers.step import step
@@ -30,10 +30,10 @@ class OpenChannelCommand(BaseCommand):
 	def run(self):
 		# Find, parse and validate configs
 		with print_scope('Checking configuration:', 'Done.\n'):
-			portal_name = get_portal_name(self._args)
+			portal_name = get_portal_name(self._args.portal)
 			portal_spec = get_portal_spec(portal_name)
 			provider_name = get_provider_from_portal(portal_spec)
-			provider_config = get_provider_config(self._args, provider_name)
+			provider_config = get_provider_config(self._args.config, provider_name)
 
 			# Ensure there is at least one channel spec
 			with step('Check specifications for channels',

@@ -1,9 +1,9 @@
 from __future__ import print_function
 
-from portal_gun.configuration.helpers import get_provider_config
+from portal_gun.commands.helpers import get_provider_config, get_provider_from_env, get_provider_from_user
 from portal_gun.context_managers.print_scope import print_scope
 from .base_command import BaseCommand
-from .handlers import create_handler
+from .handlers import list_providers, create_handler
 
 
 class VolumeCommand(BaseCommand):
@@ -24,6 +24,10 @@ class VolumeCommand(BaseCommand):
 	@classmethod
 	def add_subparser(cls, command_parsers):
 		parser = command_parsers.add_parser(cls.cmd(), help='Group of subcommands related to persistent volumes')
+		provider_group = parser.add_mutually_exclusive_group()
+		for name in list_providers():
+			provider_group.add_argument('--{}'.format(name), action='store_const', const=name, dest='provider')
+
 		subcommand_parsers = parser.add_subparsers(title='subcommands', dest='subcommand')
 
 		# List
@@ -62,11 +66,14 @@ class VolumeCommand(BaseCommand):
 		parser_delete.set_defaults(actor=lambda handler, args: handler.delete_volume(args))
 
 	def run(self):
-		provider_name = 'aws'
+		providers = list_providers()
+		provider_name = self._args.provider or \
+						get_provider_from_env(choices=providers) or \
+						get_provider_from_user(choices=providers)
 
 		# Find, parse and validate configs
 		with print_scope('Checking configuration:', 'Done.\n'):
-			provider_config = get_provider_config(self._args, provider_name)
+			provider_config = get_provider_config(self._args.config, provider_name)
 
 		# Create appropriate command handler for given cloud provider
 		handler = create_handler(provider_name, provider_config)
