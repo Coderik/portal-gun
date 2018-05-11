@@ -4,8 +4,14 @@ class BaseHandler(object):
 		self._config = config
 
 	@staticmethod
-	def provider():
-		raise NotImplementedError('Every subclass of BaseHandler should implement static provider() method.')
+	def provider_name():
+		""" Short name uniquely identifying cloud provider """
+		raise NotImplementedError('Every subclass of BaseHandler should implement static provider_name() method.')
+
+	@staticmethod
+	def provider_long_name():
+		""" Human-readable descriptive name of cloud provider """
+		raise NotImplementedError('Every subclass of BaseHandler should implement static provider_long_name() method.')
 
 	@staticmethod
 	def generate_portal_spec():

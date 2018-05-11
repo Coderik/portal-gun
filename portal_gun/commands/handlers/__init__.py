@@ -1,6 +1,6 @@
 import pkgutil
 
-from .factory import get_handler_class, create_handler, list_providers
+from .factory import get_handler_class, create_handler, list_providers, describe_providers
 
 
 def generate_portal_spec(provider):
@@ -15,7 +15,8 @@ def generate_portal_spec(provider):
 __all__ = [
 	'create_handler',
 	'generate_portal_spec',
-	'list_providers'
+	'list_providers',
+	'describe_providers'
 ]
 
 # Make sure all subclasses of BaseHandler are imported

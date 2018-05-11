@@ -9,7 +9,7 @@ def get_handler_class(provider_name):
 	"""
 
 	for cls in BaseHandler.__subclasses__():
-		if cls.provider() == provider_name:
+		if cls.provider_name() == provider_name:
 			return cls
 
 	raise Exception('Unknown cloud provider: {}'.format(provider_name))
@@ -29,8 +29,24 @@ def create_handler(provider_name, config):
 
 def list_providers():
 	"""
-	Get list of all supported cloud providers
+	Get list of names of all supported cloud providers
 	:rtype: list
 	"""
 
-	return [cls.provider() for cls in BaseHandler.__subclasses__()]
+	return [cls.provider_name() for cls in BaseHandler.__subclasses__()]
+
+
+def describe_providers():
+	"""
+	Get list of descriptions of all supported cloud providers.
+	Description includes fields: 'name', 'long_name'.
+	:rtype: list
+	"""
+
+	return [
+		{
+			'name': cls.provider_name(),
+			'long_name': cls.provider_long_name()
+		}
+		for cls in BaseHandler.__subclasses__()
+	]

@@ -3,7 +3,7 @@ from os import path
 
 from portal_gun.commands.helpers import get_portal_name, get_provider_from_env, get_provider_from_user
 from .base_command import BaseCommand
-from .handlers import list_providers, generate_portal_spec
+from .handlers import list_providers, describe_providers, generate_portal_spec
 
 
 class GeneratePortalSpecCommand(BaseCommand):
@@ -19,8 +19,9 @@ class GeneratePortalSpecCommand(BaseCommand):
 		parser = subparsers.add_parser(cls.cmd(), help='Generate template specification file for new portal')
 		parser.add_argument('portal', help='Name of portal')
 		provider_group = parser.add_mutually_exclusive_group()
-		for name in list_providers():
-			provider_group.add_argument('--{}'.format(name), action='store_const', const=name, dest='provider')
+		for desc in describe_providers():
+			provider_group.add_argument('--{}'.format(desc['name']), action='store_const', const=desc['name'],
+										dest='provider', help='Set {} as cloud provider'.format(desc['long_name']))
 
 	def run(self):
 		providers = list_providers()

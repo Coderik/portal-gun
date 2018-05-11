@@ -3,7 +3,7 @@ from __future__ import print_function
 from portal_gun.commands.helpers import get_provider_config, get_provider_from_env, get_provider_from_user
 from portal_gun.context_managers.print_scope import print_scope
 from .base_command import BaseCommand
-from .handlers import list_providers, create_handler
+from .handlers import list_providers, describe_providers, create_handler
 
 
 class VolumeCommand(BaseCommand):
@@ -25,8 +25,9 @@ class VolumeCommand(BaseCommand):
 	def add_subparser(cls, command_parsers):
 		parser = command_parsers.add_parser(cls.cmd(), help='Group of subcommands related to persistent volumes')
 		provider_group = parser.add_mutually_exclusive_group()
-		for name in list_providers():
-			provider_group.add_argument('--{}'.format(name), action='store_const', const=name, dest='provider')
+		for desc in describe_providers():
+			provider_group.add_argument('--{}'.format(desc['name']), action='store_const', const=desc['name'],
+										dest='provider', help='Set {} as cloud provider'.format(desc['long_name']))
 
 		subcommand_parsers = parser.add_subparsers(title='subcommands', dest='subcommand')
 

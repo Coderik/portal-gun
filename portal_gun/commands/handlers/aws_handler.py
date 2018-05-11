@@ -29,8 +29,12 @@ class AwsHandler(BaseHandler):
 		self._max_size = 16384  # Gb
 
 	@staticmethod
-	def provider():
+	def provider_name():
 		return 'aws'
+
+	@staticmethod
+	def provider_long_name():
+		return 'Amazon Web Services'
 
 	@staticmethod
 	def generate_portal_spec():
