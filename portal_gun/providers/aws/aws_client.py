@@ -2,8 +2,8 @@ import boto3
 from botocore.exceptions import ClientError
 from botocore.exceptions import EndpointConnectionError
 
+from portal_gun.providers.exceptions import ProviderRequestError
 from .helpers import to_aws_tags
-from .exceptions import AwsRequestError
 
 
 def aws_api_caller():
@@ -15,9 +15,9 @@ def aws_api_caller():
 			try:
 				return func(*args, **kwargs)
 			except EndpointConnectionError as e:
-				raise AwsRequestError('Could not make request to AWS.')
+				raise ProviderRequestError('Could not make request to AWS.')
 			except ClientError as e:
-				raise AwsRequestError(e.message)
+				raise ProviderRequestError(e.message)
 
 		return wrapper
 
@@ -51,7 +51,7 @@ class AwsClient(object):
 		try:
 			zones = [zone['ZoneName'] for zone in response['AvailabilityZones'] if zone['State'] == 'available']
 		except KeyError as e:
-			raise AwsRequestError('Response from AWS has unexpected format: {}.'.format(e.message))
+			raise ProviderRequestError('Response from AWS has unexpected format: {}.'.format(e.message))
 
 		return zones
 
@@ -69,7 +69,7 @@ class AwsClient(object):
 		try:
 			subnets = response['Subnets']
 		except KeyError as e:
-			raise AwsRequestError('Response from AWS has unexpected format: {}.'.format(e.message))
+			raise ProviderRequestError('Response from AWS has unexpected format: {}.'.format(e.message))
 
 		return subnets
 
@@ -293,4 +293,4 @@ class AwsClient(object):
 	def _check_status_code(response):
 		status_code = response['ResponseMetadata']['HTTPStatusCode']
 		if status_code != 200:
-			raise AwsRequestError('Request to AWS failed with status code {}.'.format(status_code))
+			raise ProviderRequestError('Request to AWS failed with status code {}.'.format(status_code))
