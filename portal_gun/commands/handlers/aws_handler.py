@@ -7,7 +7,6 @@ import time
 import portal_gun.aws.helpers as aws_helpers
 import portal_gun.ssh_ops as ssh
 from portal_gun.aws.aws_client import AwsClient
-from portal_gun.commands import common
 from portal_gun.commands.exceptions import CommandError
 from portal_gun.commands.handlers.base_handler import BaseHandler
 from portal_gun.configuration.draft import generate_draft
@@ -59,12 +58,19 @@ class AwsHandler(BaseHandler):
 			with step('Check already running instances',
 					  error_message='Portal `{}` seems to be already opened'.format(portal_name),
 					  catch=[RuntimeError]):
-				common.check_instance_not_exists(aws, portal_name, user['Arn'])
+				spot_instance = aws.find_spot_instance(portal_name, user['Arn'])
+
+				if spot_instance is not None:
+					raise RuntimeError('Instance is already running')
 
 			# Ensure persistent volumes are available
 			with step('Check volumes availability', catch=[RuntimeError]):
 				volume_ids = [volume_spec['volume_id'] for volume_spec in portal_spec['persistent_volumes']]
-				common.check_volumes_availability(aws, volume_ids)
+				volumes = aws.get_volumes_by_id(volume_ids)
+
+				if not all([volume['State'] == 'available' for volume in volumes]):
+					states = ['{} is {}'.format(volume['VolumeId'], volume['State']) for volume in volumes]
+					raise RuntimeError('Not all volumes are available: {}'.format(', '.join(states)))
 
 			# If subnet Id is not provided, pick the default subnet of the availability zone
 			if 'subnet_id' not in network_spec or not network_spec['subnet_id']:
@@ -215,7 +221,10 @@ class AwsHandler(BaseHandler):
 			# Get spot instance
 			with step('Get spot instance', error_message='Portal `{}` does not seem to be opened'.format(portal_name),
 					  catch=[RuntimeError]):
-				spot_instance = common.get_spot_instance(aws, portal_name, user['Arn'])
+				spot_instance = aws.find_spot_instance(portal_name, user['Arn'])
+
+				if spot_instance is None:
+					raise RuntimeError('Instance is not running')
 
 			spot_fleet_request_id = \
 				filter(lambda tag: tag['Key'] == 'aws:ec2spot:fleet-request-id', spot_instance['Tags'])[0]['Value']
@@ -223,7 +232,10 @@ class AwsHandler(BaseHandler):
 			# Get spot instance
 			with step('Get spot request', error_message='Portal `{}` does not seem to be opened'.format(portal_name),
 					  catch=[RuntimeError]):
-				spot_fleet_request = common.get_spot_fleet_request(aws, spot_fleet_request_id)
+				spot_fleet_request = aws.get_spot_fleet_request(spot_fleet_request_id)
+
+				if spot_fleet_request is None:
+					raise RuntimeError('Could not find spot instance request')
 
 		# TODO: print fleet and instance statistics
 
