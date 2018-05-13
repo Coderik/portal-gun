@@ -4,16 +4,16 @@ import datetime
 import sys
 import time
 
-import portal_gun.aws.helpers as aws_helpers
+import portal_gun.providers.aws.helpers as aws_helpers
 import portal_gun.ssh_ops as ssh
-from portal_gun.aws.aws_client import AwsClient
 from portal_gun.commands.exceptions import CommandError
 from portal_gun.commands.handlers.base_handler import BaseHandler
 from portal_gun.configuration.draft import generate_draft
 from portal_gun.configuration.schemas import PortalSchema, ComputeSchema
 from portal_gun.context_managers.print_scope import print_scope
 from portal_gun.context_managers.step import step
-from portal_gun.helpers.pretty_print import print_volume
+from portal_gun.providers.aws.aws_client import AwsClient
+from portal_gun.providers.aws.pretty_print import print_volume
 
 
 class AwsHandler(BaseHandler):
@@ -41,7 +41,7 @@ class AwsHandler(BaseHandler):
 
 	def open_portal(self, portal_spec, portal_name):
 		# Create AWS client
-		aws = self._create_aws_client()
+		aws = self._create_client()
 
 		# Define shortcuts
 		compute_spec = portal_spec['compute']
@@ -211,7 +211,7 @@ class AwsHandler(BaseHandler):
 
 	def close_portal(self, portal_spec, portal_name):
 		# Create AWS client
-		aws = self._create_aws_client()
+		aws = self._create_client()
 
 		with print_scope('Retrieving data from AWS:', 'Done.\n'):
 			# Get current user
@@ -252,7 +252,7 @@ class AwsHandler(BaseHandler):
 
 	def show_portal_info(self, portal_spec, portal_name):
 		# Create AWS client
-		aws = self._create_aws_client()
+		aws = self._create_client()
 
 		# Define shortcut
 		auth_spec = portal_spec['compute']['auth']
@@ -317,7 +317,7 @@ class AwsHandler(BaseHandler):
 			return auth_spec['identity_file']
 
 		# Create AWS client
-		aws = self._create_aws_client()
+		aws = self._create_client()
 
 		# Get current user
 		aws_user = aws.get_user_identity()
@@ -347,7 +347,7 @@ class AwsHandler(BaseHandler):
 
 	def get_ssh_params(self, portal_spec, portal_name):
 		# Create AWS client
-		aws = self._create_aws_client()
+		aws = self._create_client()
 
 		# Define shortcut
 		auth_spec = portal_spec['compute']['auth']
@@ -370,7 +370,7 @@ class AwsHandler(BaseHandler):
 
 	def list_volumes(self, args):
 		# Create AWS client
-		aws = self._create_aws_client()
+		aws = self._create_client()
 
 		with print_scope('Retrieving data from AWS:', 'Done.\n'):
 			if not args.all:
@@ -394,7 +394,7 @@ class AwsHandler(BaseHandler):
 
 	def create_volume(self, args):
 		# Create AWS client
-		aws = self._create_aws_client()
+		aws = self._create_client()
 
 		with print_scope('Retrieving data from AWS:', 'Done.\n'):
 			# Get current user
@@ -459,7 +459,7 @@ class AwsHandler(BaseHandler):
 
 	def update_volume(self, args):
 		# Create AWS client
-		aws = self._create_aws_client()
+		aws = self._create_client()
 
 		updates = 0
 
@@ -487,7 +487,7 @@ class AwsHandler(BaseHandler):
 
 	def delete_volume(self, args):
 		# Create AWS client
-		aws = self._create_aws_client()
+		aws = self._create_client()
 
 		with print_scope('Retrieving data from AWS:', 'Done.\n'):
 			# Get current user
@@ -505,7 +505,7 @@ class AwsHandler(BaseHandler):
 
 		print('Volume {} is deleted.'.format(args.volume_id))
 
-	def _create_aws_client(self):
+	def _create_client(self):
 		assert self._config
 
 		return AwsClient(self._config['access_key'],

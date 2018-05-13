@@ -5,7 +5,7 @@ from portal_gun import __version__
 from portal_gun.commands import fill_subparsers, create_command
 from portal_gun.commands.exceptions import CommandError
 from portal_gun.context_managers.step import StepError
-from portal_gun.aws.exceptions import AwsRequestError
+from portal_gun.providers.aws.exceptions import AwsRequestError
 
 
 def main():
