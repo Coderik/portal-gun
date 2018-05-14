@@ -153,10 +153,98 @@ class GcpHandler(BaseHandler):
 			print('Stop waiting. Instance will still be deleted eventually.')
 
 	def show_portal_info(self, portal_spec, portal_name):
-		raise NotImplementedError('Every subclass of BaseHandler should implement show_portal_info() method.')
+		# Create GCP client
+		gcp = self._create_client()
+
+		# Define shortcut
+		auth_spec = portal_spec['compute']['auth']
+
+		instance_name = gcp_helpers.get_instance_name(portal_spec, portal_name)
+
+		volumes = []
+		with print_scope('Retrieving data from GCP:', 'Done.\n'):
+			# Get instance
+			with step('Get instance', error_message='Portal `{}` does not seem to be opened'.format(portal_name),
+					  catch=[RuntimeError]):
+				instance_info = gcp.find_instance(instance_name)
+
+			# Get persistent volumes, if portal is opened
+			# if instance_info is not None:
+			# 	with step('Get volumes'):
+			# 		# TODO: get volumes
+
+		# Print status
+		if instance_info is not None:
+			public_ip = instance_info['networkInterfaces'][0]['accessConfigs'][0]['natIP']
+			public_dns = public_ip
+
+			with print_scope('Summary:', ''):
+				print('Name:              {}'.format(portal_name))
+				print('Status:            open')
+
+			with print_scope('Instance:', ''):
+				print('Id:                {}'.format(instance_info['id']))
+				print('Name:              {}'.format(instance_name))
+				print('Type:              {}'.format(instance_info['machineType'].rsplit('/', 1)[1]))
+				print('Public IP:         {}'.format(public_ip))
+				print('Public DNS name:   {}'.format(public_dns))
+				print('User:              {}'.format(auth_spec['user']))
+
+			# TODO: print volumes' details
+			# with print_scope('Persistent volumes:', ''):
+			# 	for i in range(len(volumes)):
+			# 		volume = volumes[i]
+			# 		with print_scope('Volume #{}:'.format(i), ''):
+			# 			self._print_volume_info(volume)
+
+			# Print ssh command
+			with print_scope('Use the following command to connect to the remote machine:'):
+				print('ssh -i "{}" {}@{}'.format(auth_spec['private_ssh_key'],
+												 auth_spec['user'],
+												 public_dns))
+		else:
+			with print_scope('Summary:'):
+				print('Name:              {}'.format(portal_name))
+				print('Status:            close')
 
 	def get_portal_info_field(self, portal_spec, portal_name, field):
-		raise NotImplementedError('Every subclass of BaseHandler should implement get_portal_info_field() method.')
+		# Define shortcut
+		auth_spec = portal_spec['compute']['auth']
+
+		if field == 'name':
+			return portal_name
+		if field == 'user':
+			return auth_spec['user']
+		if field == 'key':
+			return auth_spec['private_ssh_key']
+
+		# Create GCP client
+		gcp = self._create_client()
+
+		# Get instance
+		instance_name = gcp_helpers.get_instance_name(portal_spec, portal_name)
+		instance_info = gcp.find_instance(instance_name)
+
+		if field == 'status':
+			return 'open' if instance_info is not None else 'close'
+
+		# If portal is closed, we cannot provide any other information
+		if instance_info is None:
+			return None
+
+		if field == 'id':
+			return instance_info['id']
+		if field == 'type':
+			return instance_info['machineType'].rsplit('/', 1)[1]
+		if field == 'host':
+			return instance_info['networkInterfaces'][0]['accessConfigs'][0]['natIP']
+		if field == 'ip':
+			return instance_info['networkInterfaces'][0]['accessConfigs'][0]['natIP']
+		if field == 'remote':
+			return '{}@{}'.format(auth_spec['user'],
+								  instance_info['networkInterfaces'][0]['accessConfigs'][0]['natIP'])
+
+		return None
 
 	def get_ssh_params(self, portal_spec, portal_name):
 		# Create GCP client
