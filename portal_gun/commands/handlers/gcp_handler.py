@@ -105,6 +105,11 @@ class GcpHandler(BaseHandler):
 						with step('Install extra python packages', error_message='Could not install python packages',
 								  catch=[RuntimeError]):
 							ssh.install_python_packages(virtual_env, packages)
+					elif action_spec['name'] == 'install-packages':
+						packages = action_spec['args']['packages']
+						with step('Install extra packages', error_message='Could not install extra packages',
+								  catch=[RuntimeError]):
+							ssh.install_packages(packages)
 
 		# Print summary
 		print('Portal `{}` is now opened.'.format(portal_name))

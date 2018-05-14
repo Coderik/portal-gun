@@ -26,6 +26,14 @@ def install_python_packages(virtual_env, packages):
 		execute(tasks.install_python_packages, virtual_env, packages)
 
 
+def install_packages(packages):
+	if not packages:
+		return
+
+	with hide('running', 'stdout'):
+		execute(tasks.install_packages, packages)
+
+
 def sync_files(local_path, remote_path, is_upload, is_recursive):
 	extra_opts = '--out-format="[%t] {} %f %\'\'b"'.format('OUT' if is_upload else 'IN')
 	if is_recursive:
@@ -49,5 +57,6 @@ __all__ = [
 	'configure',
 	'mount_volume',
 	'install_python_packages',
+	'install_packages',
 	'sync_files'
 ]

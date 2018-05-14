@@ -28,3 +28,8 @@ def mount_volume(device, mounting_point, user, group):
 def install_python_packages(virtual_env, packages):
 	with prefix('source activate {}'.format(virtual_env)):
 		run('pip install {}'.format(' '.join(packages)))
+
+
+def install_packages(packages):
+	# TODO: handle locked /var/lib/dpkg/lock
+	sudo('apt install -y {}'.format(' '.join(packages)))

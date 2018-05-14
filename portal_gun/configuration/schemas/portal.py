@@ -41,7 +41,7 @@ class ChannelSchema(Schema):
 class PortalSchema(Schema):
 	compute = fields.Nested(ComputeSchema, required=True)
 	persistent_volumes = fields.Nested(PersistentVolumeSchema, required=True, many=True)
-	channels = fields.Nested(ChannelSchema, required=True, many=True)
+	channels = fields.Nested(ChannelSchema, many=True)
 
 	class Meta:
 		ordered = True
