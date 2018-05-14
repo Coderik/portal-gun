@@ -36,10 +36,18 @@ class SshCommand(BaseCommand):
 			# Create appropriate command handler for given cloud provider
 			handler = create_handler(provider_name, provider_config)
 
-			identity_file, user, host = handler.get_ssh_params(portal_spec, portal_name)
+			identity_file, user, host, disable_known_hosts = handler.get_ssh_params(portal_spec, portal_name)
 
 		print('Connecting to the remote machine...')
 		print('\tssh -i "{}" {}@{}'.format(identity_file, user, host).expandtabs(4))
+
+		# If needed, disable strict known-hosts check
+		options = []
+		if disable_known_hosts:
+			options = [
+				'-o',
+				'StrictHostKeyChecking=no'
+			]
 
 		# If requested, configure a preamble (a set of commands to be run automatically after connection)
 		preamble = []
@@ -53,4 +61,4 @@ class SshCommand(BaseCommand):
 		print('')
 
 		# Ssh to remote host (effectively replace current process by ssh)
-		os.execvp('ssh', ['ssh', '-i', identity_file, '{}@{}'.format(user, host)] + preamble)
+		os.execvp('ssh', ['ssh', '-i', identity_file, '{}@{}'.format(user, host)] + options + preamble)

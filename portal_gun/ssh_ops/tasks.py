@@ -3,6 +3,9 @@ from fabric.context_managers import prefix
 
 
 def mount_volume(device, mounting_point, user, group):
+	# Catch tail of greeting output
+	out = sudo('whoami')
+
 	# Inspect volume's file system
 	out = sudo('file -s {}'.format(device))
 

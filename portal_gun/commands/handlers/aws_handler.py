@@ -366,7 +366,8 @@ class AwsHandler(BaseHandler):
 		# Return parameters for ssh
 		return (auth_spec['identity_file'],
 				auth_spec['user'],
-				instance_info['PublicDnsName'])
+				instance_info['PublicDnsName'],
+				False)
 
 	def list_volumes(self, args):
 		# Create AWS client

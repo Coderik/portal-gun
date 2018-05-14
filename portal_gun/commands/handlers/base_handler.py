@@ -38,8 +38,8 @@ class BaseHandler(object):
 		Get parameters for ssh connection
 		:param portal_spec:
 		:param portal_name:
-		:return: (identity file, remote user, host)
-		:rtype (str, str, str)
+		:return: (identity file, remote user, host, disable_known_hosts)
+		:rtype (str, str, str, bool)
 		"""
 		raise NotImplementedError('Every subclass of BaseHandler should implement get_ssh_details() method.')
 

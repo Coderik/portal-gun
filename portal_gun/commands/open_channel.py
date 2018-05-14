@@ -45,7 +45,7 @@ class OpenChannelCommand(BaseCommand):
 		# Create appropriate command handler for given cloud provider
 		handler = create_handler(provider_name, provider_config)
 
-		identity_file, user, host = handler.get_ssh_params(portal_spec, portal_name)
+		identity_file, user, host, disable_known_hosts = handler.get_ssh_params(portal_spec, portal_name)
 
 		# Print information about the channels
 		with print_scope('Channels defined for portal `{}`:'.format(portal_name), ''):
@@ -56,7 +56,7 @@ class OpenChannelCommand(BaseCommand):
 					print('Remote:  {}'.format(channel['remote_path']))
 
 		# Configure ssh connection via fabric
-		ssh.configure(identity_file, user, host)
+		ssh.configure(identity_file, user, host, disable_known_hosts)
 
 		# Periodically sync files across all channels
 		print('Syncing... (press ctrl+C to interrupt)')

@@ -5,10 +5,11 @@ from fabric.contrib.project import rsync_project
 from portal_gun.ssh_ops import tasks
 
 
-def configure(identity_file, user, host):
+def configure(identity_file, user, host, disable_known_hosts=False):
 	env.key_filename = [identity_file]
 	env.user = user
 	env.hosts = [host]
+	env.disable_known_hosts = disable_known_hosts
 	env.connection_attempts = 5
 
 

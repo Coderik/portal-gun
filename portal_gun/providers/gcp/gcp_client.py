@@ -32,6 +32,32 @@ class GcpClient(object):
 		self._gce_client = None
 
 	@gcp_api_caller()
+	def request_instance(self, props):
+		response = self.gce_client().instances().insert(project=self._project, zone=self._region, body=props).execute()
+
+		return response
+
+	@gcp_api_caller()
+	def get_instance(self, name):
+		response = self.gce_client().instances().get(project=self._project, zone=self._region, instance=name) \
+			.execute()
+
+		return response
+
+	@gcp_api_caller()
+	def get_operation(self, name):
+		response = self.gce_client().zoneOperations().get(project=self._project, zone=self._region, operation=name)\
+			.execute()
+
+		return response
+
+	@gcp_api_caller()
+	def cancel_instance_request(self, name):
+		response = self.gce_client().instances().delete(project=self._project, zone=self._region, instance=name).execute()
+
+		return response
+
+	@gcp_api_caller()
 	def get_volumes(self):
 		response = self.gce_client().disks().list(project=self._project, zone=self._region).execute()
 

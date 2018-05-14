@@ -2,16 +2,19 @@ from marshmallow import fields, Schema
 from portal_gun.one_of_schema import OneOfSchema  # replace by the proper marshmallow-oneofschema package
 
 from .compute_aws import ComputeAwsSchema
+from .compute_gcp import ComputeGcpSchema
 
 
 class ComputeSchema(OneOfSchema):
 	type_field = 'provider'
 	type_field_remove = False
 	type_schemas = {
-		'aws': ComputeAwsSchema
+		'aws': ComputeAwsSchema,
+		'gcp': ComputeGcpSchema
 	}
 
 	def get_obj_type(self, obj):
+		# TODO: implement
 		return 'aws'
 
 
