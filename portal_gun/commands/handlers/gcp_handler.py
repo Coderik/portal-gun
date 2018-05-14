@@ -42,42 +42,29 @@ class GcpHandler(BaseHandler):
 		# network_spec = compute_spec['network']
 		auth_spec = compute_spec['auth']
 
+		instance_name = gcp_helpers.get_instance_name(portal_spec, portal_name)
+
 		with print_scope('Retrieving data from GCP:', 'Done.\n'):
-			# TODO: Retrieving data from GCP
-			pass
+			# Ensure that instance does not yet exist
+			with step('Check already running instances',
+					  error_message='Portal `{}` seems to be already opened'.format(portal_name),
+					  catch=[RuntimeError]):
+				instance_info = gcp.find_instance(instance_name)
+
+				if instance_info is not None:
+					raise RuntimeError('Instance is already running')
+			# TODO: Retrieving other data from GCP
 
 		# Make request for instance
 		with print_scope('Requesting an instance:'):
-			instance_name = gcp_helpers.get_instance_name(portal_spec, portal_name)
 			instance_props = gcp_helpers.build_instance_props(portal_spec, instance_name)
 			operation = gcp.request_instance(instance_props)
-			operation_name = operation['name']
 
-			# Wait for spot fleet request to be fulfilled
+			# Wait for instance request to be fulfilled
 			print('Waiting for the instance to be created...')
-			print('(usually it takes less than a minute, but might take much longer)')
-			begin_time = datetime.datetime.now()
-			next_time = begin_time
+			print('(usually it takes around a minute, but might take much longer)')
 			try:
-				while True:
-					# Repeat status request every N seconds
-					if datetime.datetime.now() > next_time:
-						operation = gcp.get_operation(operation_name)
-						next_time += datetime.timedelta(seconds=5)
-
-					# Compute time spend in waiting
-					elapsed = datetime.datetime.now() - begin_time
-
-					# Check request state and activity status
-					request_state = operation['status']
-					if request_state == 'DONE':
-						break
-					else:
-						print('Elapsed {}s. Instance request is {}'
-							  .format(elapsed.seconds, request_state), end='\r')
-
-					sys.stdout.flush()  # ensure stdout is flushed immediately.
-					time.sleep(0.5)
+				elapsed_seconds = self._wait_for(operation, gcp)
 			except KeyboardInterrupt:
 				print('\n')
 				print('Interrupting...')
@@ -86,7 +73,7 @@ class GcpHandler(BaseHandler):
 				gcp.cancel_instance_request(instance_name)
 
 				raise CommandError('Instance request has been cancelled.')
-		print('\nInstance is created in {} seconds.\n'.format((datetime.datetime.now() - begin_time).seconds))
+		print('\nInstance is created in {} seconds.\n'.format(elapsed_seconds))
 
 		# Get information about the created instance
 		instance_info = gcp.get_instance(instance_name)
@@ -125,7 +112,7 @@ class GcpHandler(BaseHandler):
 			with print_scope('Instance:'):
 				print('Id:              {}'.format(instance_info['id']))
 				print('Name:            {}'.format(instance_name))
-				# print('Type:            {}'.format(instance_info['InstanceType']))
+				print('Type:            {}'.format(instance_info['machineType'].rsplit('/', 1)[1]))
 				print('Public IP:       {}'.format(public_ip))
 				print('Public DNS name: {}'.format(public_dns))
 			with print_scope('Persistent volumes:'):
@@ -139,7 +126,31 @@ class GcpHandler(BaseHandler):
 										 public_dns))
 
 	def close_portal(self, portal_spec, portal_name):
-		raise NotImplementedError('Every subclass of BaseHandler should implement close_portal() method.')
+		# Create GCP client
+		gcp = self._create_client()
+
+		instance_name = gcp_helpers.get_instance_name(portal_spec, portal_name)
+
+		with print_scope('Retrieving data from GCP:', 'Done.\n'):
+			# Get spot instance
+			with step('Get instance', error_message='Portal `{}` does not seem to be opened'.format(portal_name),
+					  catch=[RuntimeError]):
+				instance_info = gcp.find_instance(instance_name)
+
+				if instance_info is None:
+					raise RuntimeError('Instance is not running')
+
+		# Delete instance
+		operation = gcp.delete_instance(instance_name)
+
+		# Wait for instance to be deleted
+		print('Waiting for the instance to be deleted...')
+		try:
+			elapsed_seconds = self._wait_for(operation, gcp)
+			print('Portal `{}` has been closed in {} seconds.'.format(portal_name, elapsed_seconds))
+		except KeyboardInterrupt:
+			print('\n')
+			print('Stop waiting. Instance will still be deleted eventually.')
 
 	def show_portal_info(self, portal_spec, portal_name):
 		raise NotImplementedError('Every subclass of BaseHandler should implement show_portal_info() method.')
@@ -196,3 +207,28 @@ class GcpHandler(BaseHandler):
 		assert self._config
 
 		return GcpClient(self._config['service_account_file'], self._config['project'], self._config['region'])
+
+	def _wait_for(self, operation, gcp_client):
+		begin_time = datetime.datetime.now()
+		next_time = begin_time
+		while True:
+			# Repeat status request every N seconds
+			if datetime.datetime.now() > next_time:
+				operation = gcp_client.get_operation(operation['name'])
+				next_time += datetime.timedelta(seconds=5)
+
+			# Compute time spend in waiting
+			elapsed = datetime.datetime.now() - begin_time
+
+			# Check operation status
+			request_state = operation['status']
+			if request_state == 'DONE':
+				break
+			else:
+				print('Elapsed {}s. Operation is {}'
+					  .format(elapsed.seconds, request_state), end='\r')
+
+			sys.stdout.flush()  # ensure stdout is flushed immediately.
+			time.sleep(0.5)
+
+		return (datetime.datetime.now() - begin_time).seconds

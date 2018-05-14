@@ -45,8 +45,26 @@ class GcpClient(object):
 		return response
 
 	@gcp_api_caller()
+	def find_instance(self, name):
+		flt = 'name = {}'.format(name)
+		response = self.gce_client().instances().list(project=self._project, zone=self._region, filter=flt) \
+			.execute()
+
+		if 'items' not in response or len(response['items']) == 0:
+			return None
+
+		return response['items'][0]
+
+	@gcp_api_caller()
+	def delete_instance(self, name):
+		response = self.gce_client().instances().delete(project=self._project, zone=self._region, instance=name) \
+			.execute()
+
+		return response
+
+	@gcp_api_caller()
 	def get_operation(self, name):
-		response = self.gce_client().zoneOperations().get(project=self._project, zone=self._region, operation=name)\
+		response = self.gce_client().zoneOperations().get(project=self._project, zone=self._region, operation=name) \
 			.execute()
 
 		return response
