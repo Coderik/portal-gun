@@ -1,12 +1,12 @@
 import boto3
-from botocore.exceptions import EndpointConnectionError
 from botocore.exceptions import ClientError
+from botocore.exceptions import EndpointConnectionError
 
-from portal_gun.aws.helpers import to_aws_tags
-from portal_gun.aws.exceptions import AwsRequestError
+from portal_gun.providers.exceptions import ProviderRequestError
+from .helpers import to_aws_tags
 
 
-def api_caller():
+def aws_api_caller():
 	from functools import wraps
 
 	def api_caller_decorator(func):
@@ -15,9 +15,9 @@ def api_caller():
 			try:
 				return func(*args, **kwargs)
 			except EndpointConnectionError as e:
-				raise AwsRequestError('Could not make request to AWS.')
+				raise ProviderRequestError('Could not make request to AWS.')
 			except ClientError as e:
-				raise AwsRequestError(e.message)
+				raise ProviderRequestError(e.message)
 
 		return wrapper
 
@@ -32,7 +32,7 @@ class AwsClient(object):
 		self._ec2_client = None
 		self._sts_client = None
 
-	@api_caller()
+	@aws_api_caller()
 	def get_user_identity(self):
 		# Call API
 		response = self.sts_client().get_caller_identity()
@@ -41,7 +41,7 @@ class AwsClient(object):
 
 		return response
 
-	@api_caller()
+	@aws_api_caller()
 	def get_availability_zones(self):
 		# Call API
 		response = self.ec2_client().describe_availability_zones()
@@ -51,11 +51,11 @@ class AwsClient(object):
 		try:
 			zones = [zone['ZoneName'] for zone in response['AvailabilityZones'] if zone['State'] == 'available']
 		except KeyError as e:
-			raise AwsRequestError('Response from AWS has unexpected format: {}.'.format(e.message))
+			raise ProviderRequestError('Response from AWS has unexpected format: {}.'.format(e.message))
 
 		return zones
 
-	@api_caller()
+	@aws_api_caller()
 	def get_subnets(self, availability_zone):
 		# Define filters
 		filters = [{'Name': 'availability-zone', 'Values': [availability_zone]},
@@ -69,11 +69,11 @@ class AwsClient(object):
 		try:
 			subnets = response['Subnets']
 		except KeyError as e:
-			raise AwsRequestError('Response from AWS has unexpected format: {}.'.format(e.message))
+			raise ProviderRequestError('Response from AWS has unexpected format: {}.'.format(e.message))
 
 		return subnets
 
-	@api_caller()
+	@aws_api_caller()
 	def find_spot_instance(self, portal_name, user):
 		# Define filters
 		filters = [{'Name': 'tag:portal-name', 'Values': [portal_name]},
@@ -90,7 +90,7 @@ class AwsClient(object):
 
 		return response['Reservations'][0]['Instances'][0]
 
-	@api_caller()
+	@aws_api_caller()
 	def get_instance(self, instance_id):
 		# Call API
 		response = self.ec2_client().describe_instances(InstanceIds=[instance_id])
@@ -102,7 +102,7 @@ class AwsClient(object):
 
 		return response['Reservations'][0]['Instances'][0]
 
-	@api_caller()
+	@aws_api_caller()
 	def get_spot_fleet_instances(self, spot_fleet_request_id):
 		# Call API
 		response = self.ec2_client().describe_spot_fleet_instances(SpotFleetRequestId=spot_fleet_request_id)
@@ -111,7 +111,7 @@ class AwsClient(object):
 
 		return response['ActiveInstances']
 
-	@api_caller()
+	@aws_api_caller()
 	def get_spot_fleet_request(self, spot_fleet_request_id):
 		# Call API
 		response = self.ec2_client().describe_spot_fleet_requests(SpotFleetRequestIds=[spot_fleet_request_id])
@@ -123,7 +123,7 @@ class AwsClient(object):
 
 		return response['SpotFleetRequestConfigs'][0]
 
-	@api_caller()
+	@aws_api_caller()
 	def get_volumes_by_id(self, volume_ids):
 		"""
 		:param volume_ids: One or several volume Ids
@@ -137,7 +137,7 @@ class AwsClient(object):
 
 		return response['Volumes']
 
-	@api_caller()
+	@aws_api_caller()
 	def get_volumes(self, filters=None):
 		if filters is None:
 			filters = {}
@@ -152,7 +152,7 @@ class AwsClient(object):
 
 		return response['Volumes']
 
-	@api_caller()
+	@aws_api_caller()
 	def create_volume(self, size, availability_zone, tags=None, snapshot_id=None):
 		if tags is None:
 			tags = {}
@@ -173,7 +173,7 @@ class AwsClient(object):
 
 		return response['VolumeId']
 
-	@api_caller()
+	@aws_api_caller()
 	def update_volume(self, volume_id, size):
 		# Call API
 		response = self.ec2_client().modify_volume(VolumeId=volume_id,
@@ -183,7 +183,7 @@ class AwsClient(object):
 
 		return response
 
-	@api_caller()
+	@aws_api_caller()
 	def attach_volume(self, instance_id, volume_id, device):
 		# Call API
 		response = self.ec2_client().attach_volume(InstanceId=instance_id,
@@ -194,7 +194,7 @@ class AwsClient(object):
 
 		return response
 
-	@api_caller()
+	@aws_api_caller()
 	def delete_volume(self, volume_id):
 		# Call API
 		response = self.ec2_client().delete_volume(VolumeId=volume_id)
@@ -203,7 +203,7 @@ class AwsClient(object):
 
 		return response
 
-	@api_caller()
+	@aws_api_caller()
 	def add_tags(self, resource_ids, tags):
 		"""
 		Add or overwrite tags for an EC2 resource (e.g. an instance or a volume).
@@ -223,7 +223,7 @@ class AwsClient(object):
 
 		return True
 
-	@api_caller()
+	@aws_api_caller()
 	def remove_tags(self, resource_ids, keys):
 		"""
 		Remove tags for an EC2 resource (e.g. an instance or a volume).
@@ -242,7 +242,7 @@ class AwsClient(object):
 
 		return True
 
-	@api_caller()
+	@aws_api_caller()
 	def request_spot_fleet(self, config):
 		# Call API
 		response = self.ec2_client().request_spot_fleet(SpotFleetRequestConfig=config)
@@ -251,7 +251,7 @@ class AwsClient(object):
 
 		return response
 
-	@api_caller()
+	@aws_api_caller()
 	def cancel_spot_fleet_request(self, spot_fleet_request_id):
 		# Call API
 		response = self.ec2_client().cancel_spot_fleet_requests(SpotFleetRequestIds=[spot_fleet_request_id],
@@ -293,4 +293,4 @@ class AwsClient(object):
 	def _check_status_code(response):
 		status_code = response['ResponseMetadata']['HTTPStatusCode']
 		if status_code != 200:
-			raise AwsRequestError('Request to AWS failed with status code {}.'.format(status_code))
+			raise ProviderRequestError('Request to AWS failed with status code {}.'.format(status_code))

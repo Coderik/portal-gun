@@ -50,7 +50,10 @@ setup(
     install_requires=[
 		'boto3>=1.5.18',
 		'Fabric>=1.14.0',
-		'marshmallow>=3.0.0b8'
+		'marshmallow>=3.0.0b8',
+		'google-auth>=1.4.0',
+		'google-api-python-client>=1.6.7',
+		'google-auth-httplib2'
 	],
     entry_points={  # Optional
         'console_scripts': [

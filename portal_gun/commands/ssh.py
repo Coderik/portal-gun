@@ -1,10 +1,10 @@
 import os
 
-from portal_gun.aws.aws_client import AwsClient
-from portal_gun.commands.base_command import BaseCommand
-from portal_gun.commands.exceptions import CommandError
-from portal_gun.configuration.helpers import get_config, get_portal_spec
+from portal_gun.commands.helpers import get_provider_config, get_portal_spec, get_portal_name, \
+	get_provider_from_portal
 from portal_gun.context_managers.no_print import no_print
+from .base_command import BaseCommand
+from .handlers import create_handler
 
 
 class SshCommand(BaseCommand):
@@ -28,28 +28,26 @@ class SshCommand(BaseCommand):
 	def run(self):
 		# Find, parse and validate configs
 		with no_print():
-			config = get_config(self._args)
-			portal_spec, portal_name = get_portal_spec(self._args)
+			portal_name = get_portal_name(self._args.portal)
+			portal_spec = get_portal_spec(portal_name)
+			provider_name = get_provider_from_portal(portal_spec)
+			provider_config = get_provider_config(self._args.config, provider_name)
 
-		# Create AWS client
-		aws = AwsClient(config['aws_access_key'], config['aws_secret_key'], config['aws_region'])
+			# Create appropriate command handler for given cloud provider
+			handler = create_handler(provider_name, provider_config)
 
-		# Get current user
-		aws_user = aws.get_user_identity()
-
-		# Get spot instance
-		instance_info = aws.find_spot_instance(portal_name, aws_user['Arn'])
-
-		if instance_info is None:
-			raise CommandError('Portal `{}` does not seem to be opened'.format(portal_name))
-
-		# Get values for ssh
-		key_file = portal_spec['spot_instance']['identity_file']
-		user = portal_spec['spot_instance']['remote_user']
-		host = instance_info['PublicDnsName']
+			identity_file, user, host, disable_known_hosts = handler.get_ssh_params(portal_spec, portal_name)
 
 		print('Connecting to the remote machine...')
-		print('\tssh -i "{}" {}@{}'.format(key_file, user, host).expandtabs(4))
+		print('\tssh -i "{}" {}@{}'.format(identity_file, user, host).expandtabs(4))
+
+		# If needed, disable strict known-hosts check
+		options = []
+		if disable_known_hosts:
+			options = [
+				'-o',
+				'StrictHostKeyChecking=no'
+			]
 
 		# If requested, configure a preamble (a set of commands to be run automatically after connection)
 		preamble = []
@@ -63,4 +61,4 @@ class SshCommand(BaseCommand):
 		print('')
 
 		# Ssh to remote host (effectively replace current process by ssh)
-		os.execvp('ssh', ['ssh', '-i', key_file, '{}@{}'.format(user, host)] + preamble)
+		os.execvp('ssh', ['ssh', '-i', identity_file, '{}@{}'.format(user, host)] + options + preamble)

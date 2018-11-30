@@ -5,7 +5,7 @@ from portal_gun import __version__
 from portal_gun.commands import fill_subparsers, create_command
 from portal_gun.commands.exceptions import CommandError
 from portal_gun.context_managers.step import StepError
-from portal_gun.aws.exceptions import AwsRequestError
+from portal_gun.providers.exceptions import ProviderRequestError
 
 
 def main():
@@ -24,9 +24,9 @@ def main():
 	command = create_command(args.command, args)
 
 	if command is None:
-		exit('Unknown command "{}".'.format(args.command))
+		exit('Unknown command: {}'.format(args.command))
 
 	try:
 		command.run()
-	except (CommandError, StepError, AwsRequestError) as e:
+	except (CommandError, StepError, ProviderRequestError) as e:
 		print('{}'.format(e).expandtabs(4))
