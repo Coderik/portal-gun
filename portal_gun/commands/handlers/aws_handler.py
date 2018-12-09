@@ -5,7 +5,7 @@ import sys
 import time
 
 import portal_gun.providers.aws.helpers as aws_helpers
-import portal_gun.ssh_ops as ssh
+import portal_gun.fabric as fab
 from portal_gun.commands.exceptions import CommandError
 from portal_gun.commands.handlers.base_handler import BaseHandler
 from portal_gun.configuration.draft import generate_draft
@@ -164,7 +164,7 @@ class AwsHandler(BaseHandler):
 		print('\nPersistent volumes are attached in {} seconds.\n'.format((datetime.datetime.now() - begin_time).seconds))
 
 		# Configure ssh connection via fabric
-		ssh.configure(auth_spec['identity_file'], auth_spec['user'], instance_info['PublicDnsName'])
+		fab_conn = fab.create_connection(instance_info['PublicDnsName'], auth_spec['user'], auth_spec['identity_file'])
 
 		with print_scope('Preparing the instance:', 'Instance is ready.\n'):
 			# Mount persistent volumes
@@ -174,7 +174,7 @@ class AwsHandler(BaseHandler):
 					volume_spec = portal_spec['persistent_volumes'][i]
 
 					# Mount volume
-					ssh.mount_volume(volume_spec['device'], volume_spec['mount_point'],
+					fab.mount_volume(fab_conn, volume_spec['device'], volume_spec['mount_point'],
 									 auth_spec['user'], auth_spec['group'])
 
 					# Store extra information in volume's tags
@@ -189,7 +189,7 @@ class AwsHandler(BaseHandler):
 						packages = action_spec['args']['packages']
 						with step('Install extra python packages', error_message='Could not install python packages',
 								  catch=[RuntimeError]):
-							ssh.install_python_packages(virtual_env, packages)
+							fab.install_python_packages(fab_conn, virtual_env, packages)
 
 		# Print summary
 		print('Portal `{}` is now opened.'.format(portal_name))

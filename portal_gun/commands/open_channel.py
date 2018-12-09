@@ -1,6 +1,6 @@
 import threading
 
-import portal_gun.ssh_ops as ssh
+import portal_gun.fabric as fab
 from portal_gun.commands.helpers import get_provider_config, get_portal_spec, get_portal_name, \
 	get_provider_from_portal
 from portal_gun.context_managers.print_scope import print_scope
@@ -56,7 +56,7 @@ class OpenChannelCommand(BaseCommand):
 					print('Remote:  {}'.format(channel['remote_path']))
 
 		# Configure ssh connection via fabric
-		ssh.configure(identity_file, user, host, disable_known_hosts)
+		fab_conn = fab.create_connection(host, user, identity_file)
 
 		# Periodically sync files across all channels
 		print('Syncing... (press ctrl+C to interrupt)')
@@ -66,5 +66,5 @@ class OpenChannelCommand(BaseCommand):
 			delay = 1.0
 			if 'delay' in channel:
 				delay = channel['delay']
-			run_periodically(ssh.sync_files,
-							 [channel['local_path'], channel['remote_path'], is_upload, is_recursive], delay)
+			run_periodically(fab.sync_files,
+							 [fab_conn, channel['local_path'], channel['remote_path'], is_upload, is_recursive], delay)

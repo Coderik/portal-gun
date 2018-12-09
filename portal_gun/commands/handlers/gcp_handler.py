@@ -7,7 +7,7 @@ import time
 from portal_gun.configuration.draft import generate_draft
 from portal_gun.configuration.schemas import PortalSchema, ComputeSchema
 import portal_gun.providers.gcp.helpers as gcp_helpers
-import portal_gun.ssh_ops as ssh
+import portal_gun.fabric as fab
 from portal_gun.commands.exceptions import CommandError
 from portal_gun.commands.handlers.base_handler import BaseHandler
 from portal_gun.context_managers.print_scope import print_scope
@@ -82,7 +82,7 @@ class GcpHandler(BaseHandler):
 		public_dns = public_ip
 
 		# Configure ssh connection via fabric
-		ssh.configure(auth_spec['private_ssh_key'], auth_spec['user'], public_dns, disable_known_hosts=True)
+		fab_conn = fab.create_connection(public_dns, auth_spec['user'], auth_spec['private_ssh_key'])
 
 		with print_scope('Preparing the instance:', 'Instance is ready.\n'):
 			# Mount persistent volumes
@@ -92,7 +92,7 @@ class GcpHandler(BaseHandler):
 					volume_spec = portal_spec['persistent_volumes'][i]
 
 					# Mount volume
-					ssh.mount_volume(volume_spec['device'], volume_spec['mount_point'],
+					fab.mount_volume(fab_conn, volume_spec['device'], volume_spec['mount_point'],
 									 auth_spec['user'], auth_spec['group'])
 
 			# TODO: consider importing and executing custom fab tasks instead
@@ -104,12 +104,12 @@ class GcpHandler(BaseHandler):
 						packages = action_spec['args']['packages']
 						with step('Install extra python packages', error_message='Could not install python packages',
 								  catch=[RuntimeError]):
-							ssh.install_python_packages(virtual_env, packages)
+							fab.install_python_packages(fab_conn, virtual_env, packages)
 					elif action_spec['name'] == 'install-packages':
 						packages = action_spec['args']['packages']
 						with step('Install extra packages', error_message='Could not install extra packages',
 								  catch=[RuntimeError]):
-							ssh.install_packages(packages)
+							fab.install_packages(fab_conn, packages)
 
 		# Print summary
 		print('Portal `{}` is now opened.'.format(portal_name))
