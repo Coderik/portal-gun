@@ -143,7 +143,7 @@ class AwsClient(object):
 			filters = {}
 
 		# Convert list of filters to the expected format
-		aws_filters = [{'Name': k, 'Values': AwsClient._as_list(v)} for k, v in filters.iteritems()]
+		aws_filters = [{'Name': k, 'Values': AwsClient._as_list(v)} for k, v in filters.items()]
 
 		# Call API
 		response = self.ec2_client().describe_volumes(Filters=aws_filters)

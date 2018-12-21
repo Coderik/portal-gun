@@ -1,4 +1,4 @@
-from __future__ import print_function
+
 
 import datetime
 import sys
@@ -417,12 +417,12 @@ class AwsHandler(BaseHandler):
 		# Ask for name, if not provided
 		if name is None:
 			print('Enter name for the new volume (no name by default): ', end='')
-			name = raw_input() or None
+			name = input() or None
 
 		# Ask for size, if not provide
 		if args.size is None:
 			print('Enter size of the new volume in Gb ({}): '.format(self._default_size), end='')
-			size = raw_input() or self._default_size
+			size = input() or self._default_size
 			try:
 				size = int(size)
 			except ValueError as e:
@@ -439,7 +439,7 @@ class AwsHandler(BaseHandler):
 		# Ask for availability zone, if not provided
 		if availability_zone is None:
 			print('Enter availability zone for the new volume ({}): '.format(availability_zones[0]), end='')
-			availability_zone = raw_input() or availability_zones[0]
+			availability_zone = input() or availability_zones[0]
 
 		# Check availability zone
 		if availability_zone not in availability_zones:

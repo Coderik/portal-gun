@@ -3,7 +3,7 @@ def print_volume(volume):
 
 	users = volume['users'] if 'users' in volume else []
 	tags = volume['labels'] if 'labels' in volume else {}
-	tags = ['{}:{}'.format(key, value) for key, value in tags.items()]
+	tags = ['{}:{}'.format(key, value) for key, value in list(tags.items())]
 
 	state = 'in-use' if len(users) > 0 else 'available'
 

@@ -1,4 +1,4 @@
-from __future__ import print_function
+
 
 from portal_gun.commands.helpers import get_provider_config, get_provider_from_env, get_provider_from_user
 from portal_gun.context_managers.print_scope import print_scope

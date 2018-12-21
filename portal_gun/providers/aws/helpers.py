@@ -8,7 +8,7 @@ def to_aws_tags(tags):
 	:param tags
 	:return:
 	"""
-	return [{'Key': k, 'Value': v} for k, v in tags.iteritems()]
+	return [{'Key': k, 'Value': v} for k, v in tags.items()]
 
 
 def from_aws_tags(tags):
