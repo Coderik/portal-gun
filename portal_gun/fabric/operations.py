@@ -18,7 +18,7 @@ def mount_volume(conn, device, mounting_point, user, group):
 	res = conn.sudo('file -s {}'.format(device))
 
 	# Ensure volume contains a file system
-	has_file_system = res.stdout != '{}: data'.format(device)
+	has_file_system = res.stdout.strip() != '{}: data'.format(device)
 	if not has_file_system:
 		conn.sudo('mkfs -t ext4 {}'.format(device))
 
