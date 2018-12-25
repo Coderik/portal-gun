@@ -1,5 +1,3 @@
-
-
 import datetime
 import sys
 import time
@@ -227,7 +225,7 @@ class AwsHandler(BaseHandler):
 					raise RuntimeError('Instance is not running')
 
 			spot_fleet_request_id = \
-				filter(lambda tag: tag['Key'] == 'aws:ec2spot:fleet-request-id', spot_instance['Tags'])[0]['Value']
+				list(filter(lambda tag: tag['Key'] == 'aws:ec2spot:fleet-request-id', spot_instance['Tags']))[0]['Value']
 
 			# Get spot instance
 			with step('Get spot request', error_message='Portal `{}` does not seem to be opened'.format(portal_name),
@@ -391,7 +389,7 @@ class AwsHandler(BaseHandler):
 		volumes = (self._filter_tags(volume) for volume in volumes)
 
 		# Pretty print list of volumes
-		map(print_volume, volumes)
+		list(map(print_volume, volumes))
 
 	def create_volume(self, args):
 		# Create AWS client

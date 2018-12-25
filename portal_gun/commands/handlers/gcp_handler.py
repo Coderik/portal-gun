@@ -285,7 +285,7 @@ class GcpHandler(BaseHandler):
 		volumes = gcp.get_volumes()
 
 		# Pretty print list of volumes
-		map(print_volume, volumes)
+		list(map(print_volume, volumes))
 
 	def create_volume(self, args):
 		raise NotImplementedError('Every subclass of BaseHandler should implement create_volume() method.')
