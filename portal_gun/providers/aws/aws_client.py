@@ -17,7 +17,7 @@ def aws_api_caller():
 			except EndpointConnectionError as e:
 				raise ProviderRequestError('Could not make request to AWS.')
 			except ClientError as e:
-				raise ProviderRequestError(e.message)
+				raise ProviderRequestError(str(e))
 
 		return wrapper
 
