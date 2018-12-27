@@ -73,7 +73,7 @@ class GcpHandler(BaseHandler):
 				gcp.cancel_instance_request(instance_name)
 
 				raise CommandError('Instance request has been cancelled.')
-		print('\nInstance is created in {} seconds.\n'.format(elapsed_seconds))
+		print('\nInstance was created in {} seconds.\n'.format(elapsed_seconds))
 
 		# Get information about the created instance
 		instance_info = gcp.get_instance(instance_name)

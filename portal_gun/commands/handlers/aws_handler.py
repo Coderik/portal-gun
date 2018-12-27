@@ -119,7 +119,7 @@ class AwsHandler(BaseHandler):
 				aws.cancel_spot_fleet_request(spot_fleet_request_id)
 
 				raise CommandError('Spot request has been cancelled.')
-		print('\nSpot instance is created in {} seconds.\n'.format((datetime.datetime.now() - begin_time).seconds))
+		print('\nSpot instance was created in {} seconds.\n'.format((datetime.datetime.now() - begin_time).seconds))
 
 		# Get id of the created instance
 		spot_fleet_instances = aws.get_spot_fleet_instances(spot_fleet_request_id)
@@ -159,7 +159,7 @@ class AwsHandler(BaseHandler):
 
 					sys.stdout.flush()  # ensure stdout is flushed immediately.
 					time.sleep(0.5)
-		print('\nPersistent volumes are attached in {} seconds.\n'.format((datetime.datetime.now() - begin_time).seconds))
+		print('\nPersistent volumes were attached in {} seconds.\n'.format((datetime.datetime.now() - begin_time).seconds))
 
 		# Configure ssh connection via fabric
 		fab_conn = fab.create_connection(instance_info['PublicDnsName'], auth_spec['user'], auth_spec['identity_file'])

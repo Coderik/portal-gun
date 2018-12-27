@@ -12,25 +12,25 @@ def create_connection(host, user, identity_file):
 
 def mount_volume(conn, device, mounting_point, user, group):
 	# Catch tail of greeting output
-	res = conn.sudo('whoami')
+	res = conn.sudo('whoami', hide=True)
 
 	# Inspect volume's file system
-	res = conn.sudo('file -s {}'.format(device))
+	res = conn.sudo('file -s {}'.format(device), hide=True)
 
 	# Ensure volume contains a file system
 	has_file_system = res.stdout.strip() != '{}: data'.format(device)
 	if not has_file_system:
-		conn.sudo('mkfs -t ext4 {}'.format(device))
+		conn.sudo('mkfs -t ext4 {}'.format(device), hide=True)
 
 	# Create mounting point
-	res = conn.run('mkdir -p {}'.format(mounting_point))
+	res = conn.run('mkdir -p {}'.format(mounting_point), hide=True)
 
 	# Mount volume
-	res = conn.sudo('mount {} {}'.format(device, mounting_point))
+	res = conn.sudo('mount {} {}'.format(device, mounting_point), hide=True)
 
 	# If file system has just been created, fix group and user of the mounting point
 	if not has_file_system:
-		res = conn.sudo('chown -R {}:{} {}'.format(group, user, mounting_point))
+		res = conn.sudo('chown -R {}:{} {}'.format(group, user, mounting_point), hide=True)
 
 
 def install_python_packages(conn, virtual_env, packages):
@@ -38,7 +38,7 @@ def install_python_packages(conn, virtual_env, packages):
 		return
 
 	with conn.prefix('source activate {}'.format(virtual_env)):
-		conn.run('pip install {}'.format(' '.join(packages)))
+		conn.run('pip install {}'.format(' '.join(packages)), hide=True)
 
 
 def install_packages(conn, packages):
