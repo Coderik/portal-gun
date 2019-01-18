@@ -17,7 +17,7 @@ def aws_api_caller():
 			except EndpointConnectionError as e:
 				raise ProviderRequestError('Could not make request to AWS.')
 			except ClientError as e:
-				raise ProviderRequestError(e.message)
+				raise ProviderRequestError(str(e))
 
 		return wrapper
 
@@ -143,7 +143,7 @@ class AwsClient(object):
 			filters = {}
 
 		# Convert list of filters to the expected format
-		aws_filters = [{'Name': k, 'Values': AwsClient._as_list(v)} for k, v in filters.iteritems()]
+		aws_filters = [{'Name': k, 'Values': AwsClient._as_list(v)} for k, v in filters.items()]
 
 		# Call API
 		response = self.ec2_client().describe_volumes(Filters=aws_filters)

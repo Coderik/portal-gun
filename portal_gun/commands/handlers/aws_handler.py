@@ -1,11 +1,9 @@
-from __future__ import print_function
-
 import datetime
 import sys
 import time
 
 import portal_gun.providers.aws.helpers as aws_helpers
-import portal_gun.ssh_ops as ssh
+import portal_gun.fabric as fab
 from portal_gun.commands.exceptions import CommandError
 from portal_gun.commands.handlers.base_handler import BaseHandler
 from portal_gun.configuration.draft import generate_draft
@@ -121,7 +119,7 @@ class AwsHandler(BaseHandler):
 				aws.cancel_spot_fleet_request(spot_fleet_request_id)
 
 				raise CommandError('Spot request has been cancelled.')
-		print('\nSpot instance is created in {} seconds.\n'.format((datetime.datetime.now() - begin_time).seconds))
+		print('\nSpot instance was created in {} seconds.\n'.format((datetime.datetime.now() - begin_time).seconds))
 
 		# Get id of the created instance
 		spot_fleet_instances = aws.get_spot_fleet_instances(spot_fleet_request_id)
@@ -161,10 +159,10 @@ class AwsHandler(BaseHandler):
 
 					sys.stdout.flush()  # ensure stdout is flushed immediately.
 					time.sleep(0.5)
-		print('\nPersistent volumes are attached in {} seconds.\n'.format((datetime.datetime.now() - begin_time).seconds))
+		print('\nPersistent volumes were attached in {} seconds.\n'.format((datetime.datetime.now() - begin_time).seconds))
 
 		# Configure ssh connection via fabric
-		ssh.configure(auth_spec['identity_file'], auth_spec['user'], instance_info['PublicDnsName'])
+		fab_conn = fab.create_connection(instance_info['PublicDnsName'], auth_spec['user'], auth_spec['identity_file'])
 
 		with print_scope('Preparing the instance:', 'Instance is ready.\n'):
 			# Mount persistent volumes
@@ -174,7 +172,7 @@ class AwsHandler(BaseHandler):
 					volume_spec = portal_spec['persistent_volumes'][i]
 
 					# Mount volume
-					ssh.mount_volume(volume_spec['device'], volume_spec['mount_point'],
+					fab.mount_volume(fab_conn, volume_spec['device'], volume_spec['mount_point'],
 									 auth_spec['user'], auth_spec['group'])
 
 					# Store extra information in volume's tags
@@ -189,7 +187,7 @@ class AwsHandler(BaseHandler):
 						packages = action_spec['args']['packages']
 						with step('Install extra python packages', error_message='Could not install python packages',
 								  catch=[RuntimeError]):
-							ssh.install_python_packages(virtual_env, packages)
+							fab.install_python_packages(fab_conn, virtual_env, packages)
 
 		# Print summary
 		print('Portal `{}` is now opened.'.format(portal_name))
@@ -227,7 +225,7 @@ class AwsHandler(BaseHandler):
 					raise RuntimeError('Instance is not running')
 
 			spot_fleet_request_id = \
-				filter(lambda tag: tag['Key'] == 'aws:ec2spot:fleet-request-id', spot_instance['Tags'])[0]['Value']
+				list(filter(lambda tag: tag['Key'] == 'aws:ec2spot:fleet-request-id', spot_instance['Tags']))[0]['Value']
 
 			# Get spot instance
 			with step('Get spot request', error_message='Portal `{}` does not seem to be opened'.format(portal_name),
@@ -391,7 +389,7 @@ class AwsHandler(BaseHandler):
 		volumes = (self._filter_tags(volume) for volume in volumes)
 
 		# Pretty print list of volumes
-		map(print_volume, volumes)
+		list(map(print_volume, volumes))
 
 	def create_volume(self, args):
 		# Create AWS client
@@ -417,12 +415,12 @@ class AwsHandler(BaseHandler):
 		# Ask for name, if not provided
 		if name is None:
 			print('Enter name for the new volume (no name by default): ', end='')
-			name = raw_input() or None
+			name = input() or None
 
 		# Ask for size, if not provide
 		if args.size is None:
 			print('Enter size of the new volume in Gb ({}): '.format(self._default_size), end='')
-			size = raw_input() or self._default_size
+			size = input() or self._default_size
 			try:
 				size = int(size)
 			except ValueError as e:
@@ -439,7 +437,7 @@ class AwsHandler(BaseHandler):
 		# Ask for availability zone, if not provided
 		if availability_zone is None:
 			print('Enter availability zone for the new volume ({}): '.format(availability_zones[0]), end='')
-			availability_zone = raw_input() or availability_zones[0]
+			availability_zone = input() or availability_zones[0]
 
 		# Check availability zone
 		if availability_zone not in availability_zones:

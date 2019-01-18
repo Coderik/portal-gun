@@ -28,7 +28,7 @@ class ShowPortalInfoCommand(BaseCommand):
 			# Get value of the specified field and print it
 			value = self.get_field(self._args.field)
 			if value is not None:
-				print value
+				print(value)
 		else:
 			self.show_full_info()
 

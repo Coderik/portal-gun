@@ -1,4 +1,4 @@
-from __future__ import print_function
+
 
 from portal_gun.commands.helpers import get_provider_config, get_portal_spec, get_portal_name, \
 	get_provider_from_portal

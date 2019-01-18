@@ -1,4 +1,4 @@
-from __future__ import print_function
+
 
 import json
 from os import path, environ
@@ -79,7 +79,7 @@ def get_provider_from_user(choices):
 	provider = None
 	while provider is None:
 		print('Select cloud provider [{}]: '.format(', '.join(choices)), end='')
-		provider = raw_input() or None
+		provider = input() or None
 		if provider not in choices:
 			provider = None
 
