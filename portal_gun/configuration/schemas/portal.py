@@ -27,6 +27,19 @@ class PersistentVolumeSchema(Schema):
 		ordered = True
 
 
+class BindingSchema(Schema):
+	name = fields.String(required=True)
+	direction = fields.String(required=True)
+	local_path = fields.String(required=True)
+	remote_path = fields.String(required=True)
+	recursive = fields.Boolean()
+	allow_delete = fields.Boolean()
+
+	class Meta:
+		ordered = True
+
+
+# OBSOLETE
 class ChannelSchema(Schema):
 	direction = fields.String(required=True)
 	local_path = fields.String(required=True)
@@ -41,7 +54,7 @@ class ChannelSchema(Schema):
 class PortalSchema(Schema):
 	compute = fields.Nested(ComputeSchema, required=True)
 	persistent_volumes = fields.Nested(PersistentVolumeSchema, required=True, many=True)
-	channels = fields.Nested(ChannelSchema, many=True)
+	bindings = fields.Nested(BindingSchema, many=True)
 
 	class Meta:
 		ordered = True

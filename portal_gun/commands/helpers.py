@@ -60,6 +60,17 @@ def get_portal_spec(portal_name):
 	return portal_spec
 
 
+def get_binding_spec(portal_spec, binding_id):
+	bindings = portal_spec['bindings']
+
+	for binding in bindings:
+		if str(binding_id) in binding['name']:
+			return binding
+
+	index = int(binding_id)
+	return bindings[index]
+
+
 def get_provider_from_portal(portal_spec):
 	return portal_spec['compute']['provider']
 
@@ -92,6 +103,7 @@ __all__ = [
 	'get_provider_config',
 	'get_portal_name',
 	'get_portal_spec',
+	'get_binding_spec',
 	'get_provider_from_portal',
 	'get_provider_from_env',
 	'get_provider_from_user'
