@@ -4,7 +4,7 @@ boto3==1.5.18
 botocore==1.8.32
 cachetools==2.1.0
 cffi==1.11.4
-cryptography==2.1.4
+cryptography==3.2
 docutils==0.14
 enum34==1.1.6
 fabric==2.4.0
